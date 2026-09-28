@@ -13,3 +13,9 @@ apps/backend/storage/results/
 apps/backend/storage/fallback/*
 !apps/backend/storage/fallback/.gitkeep
 !apps/backend/storage/fallback/*.json
+
+# Local-only: superseded by docs/architecture, docs/design, docs/product.
+# Kept on disk for reference; never re-tracked.
+/docs/build-day/
+/docs/backend-architecture.html
+/docs/frontend-integration.html
