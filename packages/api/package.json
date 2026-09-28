@@ -1,0 +1,12 @@
+{
+  "name": "@mosaic/api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/client.ts"
+  },
+  "dependencies": {
+    "@mosaic/types": "workspace:*"
+  }
+}

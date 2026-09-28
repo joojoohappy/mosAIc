@@ -1,0 +1,8 @@
+node_modules/
+.next/
+dist/
+.openai/
+apps/backend/
+apps/mobile/
+pnpm-lock.yaml
+apps/web/next-env.d.ts

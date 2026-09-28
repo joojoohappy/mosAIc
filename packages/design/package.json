@@ -1,0 +1,9 @@
+{
+  "name": "@mosaic/design",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./tokens.css": "./tokens.css"
+  }
+}
