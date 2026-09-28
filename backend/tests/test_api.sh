@@ -2,12 +2,12 @@
 # HTTP contract smoke test. Unit tests cover the pipeline; this covers the ifs in
 # main.py and proves the documented status codes are the real ones.
 #
-#   ./test_api.sh                 # starts its own server on :8001
+#   ./backend/tests/test_api.sh   # starts its own server on :8001
 #   BASE=http://localhost:3000 ./test_api.sh   # through the Next.js proxy
 set -uo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."          # backend/
 
-RECIPES=../data/recipes.json
+RECIPES=data/recipes.json
 BACKUP=$(mktemp); cp "$RECIPES" "$BACKUP"
 TMP=$(mktemp -d)
 cleanup() { cp "$BACKUP" "$RECIPES"; rm -rf "$BACKUP" "$TMP"; kill %1 2>/dev/null; }
@@ -25,7 +25,7 @@ json.dump(d,open(p,'w'),ensure_ascii=False,indent=2)
 " "$RECIPES"
 
 if [ -z "${BASE:-}" ]; then
-  ./.venv/bin/uvicorn main:app --port 8001 >/tmp/mosaic-test-api.log 2>&1 &
+  ./.venv/bin/uvicorn app.main:app --port 8001 >/tmp/mosaic-test-api.log 2>&1 &
   BASE=http://localhost:8001
   until curl -sf "$BASE/api/health" >/dev/null 2>&1; do sleep 0.2; done
 fi

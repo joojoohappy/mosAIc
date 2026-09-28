@@ -1,8 +1,8 @@
 """MOSAIC backend — five routes and a static mount. That is the whole HTTP layer.
 
-Run:  uvicorn main:app --port 8000     (no --reload for a demo: one less variable)
+Run:  uvicorn app.main:app --app-dir backend --port 8000   (no --reload for a demo)
 
-No CORS middleware, deliberately. Person 1's next.config.js proxies /api/* and
+No CORS middleware, deliberately. The website's next.config.js proxies /api/* and
 /static/* here, so the browser only ever talks to localhost:3000.
 
 Routes are `def`, not `async def`. Starlette runs sync routes in a threadpool, so a
@@ -14,16 +14,8 @@ from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from generate import (
-    MAX_BYTES,
-    STORAGE,
-    _is_image,
-    get_recipe,
-    load_recipes,
-    load_result,
-    public_recipe,
-    run_generation,
-)
+from .generation import MAX_BYTES, STORAGE, _is_image, load_result, run_generation
+from .recipes import get_recipe, load_recipes, public_recipe
 
 app = FastAPI(title="MOSAIC backend")
 
@@ -36,7 +28,7 @@ app.mount("/static", StaticFiles(directory=STORAGE), name="static")
 if not any(r.get("tryReady") for r in load_recipes()):
     print("[recipes] WARNING: no recipe has tryReady=true — POST /api/generate will "
           "return 403 recipe_not_ready for all of them. Flip the ones you have "
-          "verified in data/recipes.json.")
+          "verified in backend/data/recipes.json.")
 
 
 def _err(code: int, error: str) -> JSONResponse:

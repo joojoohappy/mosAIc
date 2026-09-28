@@ -1,10 +1,10 @@
 """Pre-generate the fallback layer. Run this BEFORE Build Day, not during it.
 
-    python pregen.py seed-01 ./test-photo.jpg
+    cd backend && python -m scripts.pregen seed-01 ./test-photo.jpg
 
 It calls the same _call_provider the live path uses, so one successful run does four
 things at once: proves the provider works, produces the cached asset, records its
-provenance, and fills the empty 實測 row in main/SEED-RECIPES.md.
+provenance, and fills the empty 實測 row in docs/build-day/SEED-RECIPES.md.
 
 This is also why the live branch is pre-Build-Day work: you cannot run pregen without
 _call_provider already written.
@@ -15,7 +15,8 @@ import sys
 import time
 from pathlib import Path
 
-from generate import FALLBACK_DIR, _call_provider, _is_image, _now, get_recipe
+from app.generation import FALLBACK_DIR, _call_provider, _is_image, _now
+from app.recipes import get_recipe
 
 PROVIDER = "TODO: provider name"  # fill in when selected
 MODEL = "TODO: exact model id"    # copy from the provider's live docs, not memory
@@ -55,4 +56,4 @@ FALLBACK_DIR.mkdir(parents=True, exist_ok=True)
     ),
     encoding="utf-8",
 )
-print(f"ok — {recipe_id} fallback written in {duration}s. Record it in main/SEED-RECIPES.md too.")
+print(f"ok — {recipe_id} fallback written in {duration}s. Record it in docs/build-day/SEED-RECIPES.md too.")

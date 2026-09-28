@@ -1,6 +1,6 @@
 """Unit tests for the generation pipeline.
 
-    python -m unittest -v          (or: ./.venv/bin/python test_generate.py)
+    cd backend && python -m unittest
 
 stdlib unittest on purpose: pytest would be nicer to read and is one more thing to
 install on a laptop at 9am on Build Day.
@@ -17,7 +17,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import generate
+from app import generation as generate
+from app import recipes as recipe_mod
 
 # A real 1x1 PNG: these bytes are written to disk and served, so use a valid file.
 PNG = base64.b64decode(
@@ -39,7 +40,7 @@ class Base(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
         self.addCleanup(shutil.rmtree, tmp, True)
-        self.recipe = generate.get_recipe("seed-01")
+        self.recipe = recipe_mod.get_recipe("seed-01")
 
     def add_fallback(self, rid="seed-01", img=PNG, **override):
         meta = {
@@ -70,20 +71,20 @@ class ImageSniffing(Base):
 
 class RecipeLookup(Base):
     def test_three_seeds_with_prompts(self):
-        ids = [r["id"] for r in generate.load_recipes()]
+        ids = [r["id"] for r in recipe_mod.load_recipes()]
         self.assertEqual(ids, ["seed-01", "seed-02", "seed-03"])
-        for r in generate.load_recipes():
+        for r in recipe_mod.load_recipes():
             self.assertTrue(r["prompt"].strip(), f"{r['id']} has no prompt")
             self.assertTrue(r["sourcePostUrl"].startswith("https://"))
 
     def test_unknown_recipe_returns_none(self):
-        self.assertIsNone(generate.get_recipe("seed-99"))
-        self.assertIsNone(generate.get_recipe(""))
+        self.assertIsNone(recipe_mod.get_recipe("seed-99"))
+        self.assertIsNone(recipe_mod.get_recipe(""))
 
     def test_creator_fields_are_still_unverified(self):
         # Guards the honesty rule: nobody has checked the Threads posts yet, so no
         # name or IG may appear in the data. Flip this test when they are verified.
-        for r in generate.load_recipes():
+        for r in recipe_mod.load_recipes():
             self.assertIsNone(r["creatorName"], f"{r['id']} has an unverified name")
             self.assertIsNone(r["creatorInstagramUrl"], f"{r['id']} has an unverified IG")
 
@@ -92,24 +93,24 @@ class PublicProjection(Base):
     """The structural guarantee that prompt text cannot reach a client."""
 
     def test_prompt_is_never_in_the_projection(self):
-        for r in generate.load_recipes():
+        for r in recipe_mod.load_recipes():
             with self.subTest(recipe=r["id"]):
-                self.assertNotIn("prompt", generate.public_recipe(r))
+                self.assertNotIn("prompt", recipe_mod.public_recipe(r))
 
     def test_projection_is_an_allowlist_not_a_denylist(self):
         # A private field added to recipes.json later must stay private by default.
-        leaked = generate.public_recipe({**self.recipe, "internalNote": "secret"})
+        leaked = recipe_mod.public_recipe({**self.recipe, "internalNote": "secret"})
         self.assertNotIn("internalNote", leaked)
 
     def test_projection_shape_is_stable_even_when_a_field_is_absent(self):
         # The frontend codes against a fixed shape; a thin record still yields
         # every key, with null for what is missing.
-        thin = generate.public_recipe({"id": "seed-01"})
-        self.assertEqual(set(thin), set(generate.PUBLIC_FIELDS))
+        thin = recipe_mod.public_recipe({"id": "seed-01"})
+        self.assertEqual(set(thin), set(recipe_mod.PUBLIC_FIELDS))
         self.assertIsNone(thin["tryReady"])
 
     def test_projection_carries_what_the_gallery_needs(self):
-        p = generate.public_recipe(self.recipe)
+        p = recipe_mod.public_recipe(self.recipe)
         for field in ("id", "title", "summary", "sourcePostUrl", "tryReady"):
             self.assertIn(field, p)
 
@@ -119,11 +120,11 @@ class TryReadiness(Base):
         # Nobody has established a basis for running these prompts yet, so the
         # honest default is false. When you flip one, flip it here too -- and be
         # ready to say what the evidence was.
-        for r in generate.load_recipes():
+        for r in recipe_mod.load_recipes():
             self.assertFalse(r["tryReady"], f"{r['id']} claims tryReady without evidence")
 
     def test_preview_images_are_still_absent(self):
-        for r in generate.load_recipes():
+        for r in recipe_mod.load_recipes():
             self.assertIsNone(r["previewImageUrl"], f"{r['id']} has an uncleared preview")
 
 

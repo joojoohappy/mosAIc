@@ -2,7 +2,11 @@
 # Start both processes. Forgetting the backend is the dumbest and most common way to
 # kill a demo. No --reload: one less moving part while presenting.
 set -euo pipefail
-cd "$(dirname "$0")"
+
+# Docker Desktop squats :8000 on some machines. Override without editing this file:
+#   PORT=8010 ./scripts/dev.sh   (then point next.config.js at the same port)
+PORT=${PORT:-8000}
+cd "$(dirname "$0")/.."          # repo root
 
 UV=backend/.venv/bin/uvicorn
 if [ ! -x "$UV" ]; then
@@ -11,7 +15,7 @@ if [ ! -x "$UV" ]; then
   exit 1
 fi
 
-"$UV" main:app --port 8000 --app-dir backend &
+"$UV" app.main:app --port "$PORT" --app-dir backend &
 API=$!
 trap 'kill $API 2>/dev/null || true' EXIT
 
@@ -19,15 +23,15 @@ trap 'kill $API 2>/dev/null || true' EXIT
 # spins silently forever when the backend fails to boot.
 up=""
 for _ in $(seq 60); do
-  if curl -sf localhost:8000/api/health >/dev/null 2>&1; then up=1; break; fi
+  if curl -sf "localhost:$PORT/api/health" >/dev/null 2>&1; then up=1; break; fi
   if ! kill -0 $API 2>/dev/null; then echo "backend exited during startup (see above)"; exit 1; fi
   sleep 0.25
 done
-[ -n "$up" ] || { echo "backend did not answer /api/health within 15s"; exit 1; }
-echo "backend up on :8000"
+[ -n "$up" ] || { echo "backend did not answer /api/health on :$PORT within 15s"; exit 1; }
+echo "backend up on :$PORT"
 
-if [ ! -f mosaic/package.json ]; then
-  echo "mosaic/ has no package.json yet — running backend only. Ctrl-C to stop."
+if [ ! -f frontend/website/package.json ]; then
+  echo "frontend/website/ has no package.json yet — running backend only. Ctrl-C to stop."
   wait $API
 fi
-cd mosaic && npm run dev
+cd frontend/website && npm run dev
