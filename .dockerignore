@@ -1,0 +1,9 @@
+node_modules/
+**/node_modules/
+.next/
+apps/backend/
+apps/mobile/
+docs/
+content/
+.git/
+*.md

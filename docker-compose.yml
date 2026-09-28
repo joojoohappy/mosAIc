@@ -1,0 +1,14 @@
+services:
+  backend:
+    build: ./apps/backend
+    ports: ["8010:8000"]  # host :8000 is taken locally (see README) -- container port is unaffected
+    env_file: apps/backend/.env   # local only, gitignored -- see apps/backend/.env.example
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports: ["3000:3000"]
+    environment:
+      BACKEND_URL: http://backend:8000   # container-to-container, over compose's network
+    depends_on: [backend]
