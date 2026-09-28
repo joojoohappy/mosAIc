@@ -1,6 +1,6 @@
 """Pre-generate the fallback layer. Run this BEFORE Build Day, not during it.
 
-    MOSAIC_API_KEY=... python pregen.py seed-01 ./test-photo.jpg
+    python pregen.py seed-01 ./test-photo.jpg
 
 It calls the same _call_provider the live path uses, so one successful run does four
 things at once: proves the provider works, produces the cached asset, records its

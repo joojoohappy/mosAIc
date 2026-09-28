@@ -1,0 +1,238 @@
+<title>MOSAIC 前端對接</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root{
+    --ground:#F6F7F5; --surface:#FFFFFF; --sunk:#E3E7E2; --surface2:#ECEFEB;
+    --ink:#151C1A; --muted:#5B6864; --line:#D9DED8;
+    --accent:#0D6E5F; --accent-soft:#D9EBE6;
+    --live:#1B7A4B; --live-bg:#E0F0E5;
+    --cached:#8E5C0C; --cached-bg:#F6EBD7;
+    --mock:#636A72; --mock-bg:#E7E9EA;
+    --danger:#A32F26; --danger-bg:#F7E3E0;
+    --fd:"Bricolage Grotesque","Trebuchet MS",sans-serif;
+    --fb:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+    --fm:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#0D1211; --surface:#151D1B; --sunk:#111917; --surface2:#1C2624;
+    --ink:#E7EDEA; --muted:#93A19D; --line:#2A3532;
+    --accent:#4FC7B2; --accent-soft:#16332E;
+    --live:#5BBF87; --live-bg:#15291E;
+    --cached:#D69B44; --cached-bg:#2C2317;
+    --mock:#8E959B; --mock-bg:#1E2326;
+    --danger:#E2776B; --danger-bg:#301A18;
+  }}
+  :root[data-theme="dark"]{
+    --ground:#0D1211; --surface:#151D1B; --sunk:#111917; --surface2:#1C2624;
+    --ink:#E7EDEA; --muted:#93A19D; --line:#2A3532;
+    --accent:#4FC7B2; --accent-soft:#16332E;
+    --live:#5BBF87; --live-bg:#15291E;
+    --cached:#D69B44; --cached-bg:#2C2317;
+    --mock:#8E959B; --mock-bg:#1E2326;
+    --danger:#E2776B; --danger-bg:#301A18;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground); color:var(--ink); font-family:var(--fb); font-size:16px;
+       line-height:1.6; margin:0; padding-block:0 64px; padding-left:16px; padding-right:16px}
+  .wrap{max-width:820px; margin:0 auto; display:flex; flex-direction:column; gap:42px}
+  header{padding-block:40px 0; display:flex; flex-direction:column; gap:14px}
+  h1{font-family:var(--fd); font-weight:700; font-size:clamp(1.9rem,5.5vw,2.7rem); line-height:1.1;
+     letter-spacing:-.022em; margin:0; text-wrap:balance}
+  .sub{color:var(--muted); margin:0; max-width:60ch}
+  .tags{display:flex; flex-wrap:wrap; gap:7px}
+  .tag{font-family:var(--fm); font-size:.71rem; padding:4px 10px; border-radius:100px;
+       border:1px solid var(--line); background:var(--surface); color:var(--muted)}
+  .tag.on{background:var(--accent-soft); border-color:transparent; color:var(--accent); font-weight:600}
+  .step{display:flex; flex-direction:column; gap:14px}
+  .sh{display:flex; align-items:baseline; gap:12px}
+  .sn{font-family:var(--fm); font-size:.74rem; font-weight:600; color:var(--accent);
+      background:var(--accent-soft); border-radius:3px; padding:3px 9px; flex:none}
+  h2{font-family:var(--fd); font-weight:700; font-size:1.32rem; letter-spacing:-.015em; margin:0;
+     line-height:1.25; text-wrap:balance}
+  .lede{color:var(--muted); font-size:.93rem; margin:0; max-width:64ch}
+  pre{margin:0; background:var(--sunk); border:1px solid var(--line); border-radius:4px;
+      padding:15px 17px; overflow-x:auto; font-family:var(--fm); font-size:.78rem; line-height:1.7}
+  code{font-family:var(--fm); font-size:.86em; background:var(--surface2); padding:1px 5px; border-radius:3px}
+  pre code{background:none; padding:0; font-size:1em}
+  .cm{color:var(--muted)} .ac{color:var(--accent); font-weight:600} .dn{color:var(--danger)}
+  .tw{overflow-x:auto; border:1px solid var(--line); border-radius:4px; background:var(--surface)}
+  table{border-collapse:collapse; width:100%; font-size:.87rem; min-width:420px}
+  th,td{text-align:left; padding:10px 15px; border-bottom:1px solid var(--line); vertical-align:top; line-height:1.5}
+  th{font-family:var(--fm); font-size:.68rem; letter-spacing:.09em; text-transform:uppercase;
+     color:var(--muted); font-weight:600; background:var(--surface2)}
+  tr:last-child td{border-bottom:none}
+  .modes{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px}
+  .m{border:1px solid var(--line); border-radius:4px; background:var(--surface); padding:16px;
+     display:flex; flex-direction:column; gap:9px}
+  .m .p{align-self:flex-start; font-family:var(--fm); font-size:.74rem; font-weight:600;
+        padding:3px 10px; border-radius:100px}
+  .m.l .p{background:var(--live-bg); color:var(--live)}
+  .m.c .p{background:var(--cached-bg); color:var(--cached)}
+  .m.k .p{background:var(--mock-bg); color:var(--mock)}
+  .m b{font-size:.9rem; font-weight:600}
+  .m span{font-size:.85rem; color:var(--muted); line-height:1.5}
+  .warn{background:var(--danger-bg); border-left:4px solid var(--danger); border-radius:4px;
+        padding:16px 20px; display:flex; flex-direction:column; gap:8px}
+  .warn h2{color:var(--danger); font-size:1.15rem}
+  .warn p{margin:0; font-size:.92rem; line-height:1.6}
+  ol.rules{list-style:none; counter-reset:r; margin:0; padding:0; display:flex; flex-direction:column; gap:9px}
+  ol.rules li{counter-increment:r; display:grid; grid-template-columns:24px 1fr; gap:13px;
+    background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent);
+    border-radius:4px; padding:13px 15px; font-size:.91rem; line-height:1.55}
+  ol.rules li::before{content:counter(r); font-family:var(--fm); font-size:.76rem; font-weight:600;
+    color:var(--accent); background:var(--accent-soft); border-radius:3px; text-align:center; height:21px; line-height:21px}
+  footer{color:var(--muted); font-size:.82rem; border-top:1px solid var(--line); padding-top:18px; line-height:1.6}
+  a{color:var(--accent)}
+</style>
+
+<div class="wrap">
+
+<header>
+  <h1>MOSAIC 前端對接</h1>
+  <p class="sub">兩個 endpoint，一個型別檔，四個步驟。後端是 Python / FastAPI，但你不需要知道 — 打 <code>/api/*</code> 就好。</p>
+  <div class="tags">
+    <span class="tag on">2 endpoints</span>
+    <span class="tag">無 CORS</span>
+    <span class="tag">無需輪詢</span>
+    <span class="tag">後端 :8000</span>
+  </div>
+</header>
+
+<div class="step">
+  <div class="sh"><span class="sn">1</span><h2>一次性設定</h2></div>
+  <p class="lede">加到 <code>mosaic/next.config.js</code>（已經幫你寫好了，確認在就好）。瀏覽器只跟 <code>:3000</code> 講話，所以沒有 CORS 問題。</p>
+<pre><code>async rewrites() {
+  return [
+    { source: <span class="ac">'/api/:path*'</span>,    destination: <span class="ac">'http://localhost:8000/api/:path*'</span> },
+    { source: <span class="ac">'/static/:path*'</span>, destination: <span class="ac">'http://localhost:8000/static/:path*'</span> },
+  ];
+}</code></pre>
+  <p class="lede"><strong>不要</strong>在 <code>app/api/</code> 底下放任何 <code>route.ts</code>。Next 的 rewrites 是 <code>afterFiles</code>，實體檔案會優先，請求就到不了後端了。</p>
+</div>
+
+<div class="step">
+  <div class="sh"><span class="sn">2</span><h2>型別（已在 repo 裡）</h2></div>
+  <p class="lede"><code>mosaic/types/generation.ts</code> 和 <code>types/recipe.ts</code>，直接 import。</p>
+<pre><code><span class="cm">// types/generation.ts</span>
+export type ResultMode = <span class="ac">'live' | 'cached' | 'mock'</span>;
+
+export type GenerationResult = {
+  resultId:   string;
+  recipeId:   string;
+  mode:       ResultMode;      <span class="cm">// 一定有值</span>
+  sourceNote: string;          <span class="cm">// 原樣顯示，不要改寫</span>
+  imageUrl:   string | null;   <span class="cm">// mode==='mock' 時為 null</span>
+  fallbackReason: string | null; <span class="cm">// 除錯用，不要顯示給使用者</span>
+  recipeTitle:         string;
+  creatorName:         string | null;  <span class="cm">// 未核實 → null</span>
+  sourcePostUrl:       string;
+  creatorInstagramUrl: string | null;  <span class="cm">// 未核實 → null</span>
+  createdAt:  string;          <span class="cm">// ISO 8601 UTC</span>
+};</code></pre>
+  <p class="lede">Recipe 資料讀 <code>data/recipes.json</code>（3 筆：<code>seed-01/02/03</code>）。<strong>只在 server component 讀</strong> — 裡面有 prompt 原文，不要進 client bundle。</p>
+</div>
+
+<div class="step">
+  <div class="sh"><span class="sn">3</span><h2>送出與取回</h2></div>
+  <p class="lede"><strong><code>POST /api/generate</code> 是同步的，會卡住最多 60 秒。不需要輪詢</strong> — 但 loading state 一定要做，而且不要設短 timeout。</p>
+<pre><code><span class="cm">// 送圖 → 拿 resultId（這一步會等很久）</span>
+export async function generate(recipeId: string, file: File) {
+  const body = new FormData();
+  body.append(<span class="ac">'recipeId'</span>, recipeId);
+  body.append(<span class="ac">'image'</span>, file);
+
+  const res  = await fetch(<span class="ac">'/api/generate'</span>, { method: <span class="ac">'POST'</span>, body });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error);   <span class="cm">// 見步驟 5</span>
+  return json.resultId as string;             <span class="cm">// 32 個 hex 字元</span>
+}
+
+<span class="cm">// 用 resultId 取結果（重新整理後仍然讀得到）</span>
+export async function getResult(resultId: string) {
+  const res = await fetch(`/api/results/${resultId}`);
+  if (!res.ok) throw new Error(<span class="ac">'unknown_result'</span>);
+  return res.json() as Promise&lt;GenerationResult&gt;;
+}</code></pre>
+  <p class="lede">限制：<code>jpeg</code> / <code>png</code> / <code>webp</code>，<strong>8MB 以內</strong>。後端用 magic bytes 驗證，改副檔名沒有用。</p>
+</div>
+
+<div class="step">
+  <div class="sh"><span class="sn">4</span><h2>依 mode 決定畫面</h2></div>
+  <p class="lede">後端會告訴你這張圖是怎麼來的。<strong>三種都要能畫</strong> — 目前測試環境全部回 <code>mock</code>。</p>
+  <div class="modes">
+    <div class="m l">
+      <span class="p">live</span>
+      <b>正常顯示圖片</b>
+      <span>真的由使用者這次的照片生成。<code>imageUrl</code> 有值。</span>
+    </div>
+    <div class="m c">
+      <span class="p">cached</span>
+      <b>顯示圖片 ＋ 明顯的揭露文字</b>
+      <span>是預備素材，<strong>不是</strong>使用者的照片生成的。<code>imageUrl</code> 有值，但畫面絕不能寫「你的照片生成完成」。</span>
+    </div>
+    <div class="m k">
+      <span class="p">mock</span>
+      <b>沒有圖片，版面要撐得住</b>
+      <span><code>imageUrl === null</code>。顯示佈局和 <code>sourceNote</code>，不要出現破圖。</span>
+    </div>
+  </div>
+<pre><code>{result.imageUrl
+  ? &lt;img src={result.imageUrl} alt={result.recipeTitle} /&gt;
+  : &lt;EmptyResult /&gt;}
+
+<span class="cm">{/* 三種 mode 都要顯示，原文照登 */}</span>
+&lt;p className="disclosure"&gt;{result.sourceNote}&lt;/p&gt;
+
+<span class="cm">{/* 創作者未核實時，只放原貼文連結 */}</span>
+{result.creatorName
+  ? &lt;a href={result.creatorInstagramUrl ?? result.sourcePostUrl}&gt;{result.creatorName}&lt;/a&gt;
+  : &lt;a href={result.sourcePostUrl}&gt;來源待確認 · 查看原始貼文&lt;/a&gt;}</code></pre>
+</div>
+
+<div class="step">
+  <div class="sh"><span class="sn">5</span><h2>錯誤</h2></div>
+  <p class="lede">失敗一律是 <code>{ "error": "..." }</code>。這六個是全部，不會有別的。</p>
+  <div class="tw">
+    <table>
+      <tr><th>HTTP</th><th>error</th><th>畫面要說什麼</th></tr>
+      <tr><td>400</td><td><code>missing_recipe_id</code></td><td>前端 bug，不該發生</td></tr>
+      <tr><td>400</td><td><code>missing_image</code></td><td>請先選一張照片</td></tr>
+      <tr><td>400</td><td><code>unsupported_type</code></td><td>只支援 JPEG / PNG / WebP</td></tr>
+      <tr><td>400</td><td><code>too_large</code></td><td>照片請小於 8MB</td></tr>
+      <tr><td>404</td><td><code>unknown_recipe</code></td><td>找不到這份 recipe</td></tr>
+      <tr><td>404</td><td><code>unknown_result</code></td><td>結果不存在或連結已失效</td></tr>
+    </table>
+  </div>
+  <p class="lede"><code>GET /api/health</code> → <code>{ "ok": true }</code>。打不到就是<strong>後端沒開</strong>，顯示「後端未啟動」，不要顯示一般錯誤 — 這會省掉你半小時的除錯。</p>
+</div>
+
+<div class="warn">
+  <h2>三件事不能做</h2>
+  <ol class="rules" style="margin-top:4px">
+    <li><strong>不要自己寫結果的說明文字。</strong><code>sourceNote</code> 原樣顯示。那句話是伺服器產生的，決定了畫面有沒有謊報「這是你的照片生成的」。</li>
+    <li><strong>不要傳 prompt。</strong>只傳 <code>recipeId</code>，後端自己去查。傳 prompt 等於讓任何人打開 devtools 就能免費用我們的 API key。</li>
+    <li><strong>不要把 <code>creatorName</code> 的 null 填成任何名字。</strong>三份 seed 的作者都還沒核實。null 就顯示「來源待確認」＋原貼文連結。</li>
+  </ol>
+</div>
+
+<div class="step">
+  <div class="sh"><span class="sn">6</span><h2>怎麼跑起來</h2></div>
+<pre><code><span class="cm"># repo 根目錄，一次起前後端</span>
+./dev.sh
+
+<span class="cm"># 只想確認後端活著</span>
+curl localhost:3000/api/health          <span class="cm"># 走 proxy</span>
+
+<span class="cm"># 不等前端，先看一筆真實 payload 長什麼樣</span>
+curl -F recipeId=seed-01 -F image=@photo.jpg localhost:3000/api/generate</code></pre>
+  <p class="lede">後端還沒接生成服務，所以現在每一筆都是 <code>mock</code>（<code>imageUrl: null</code>）。<strong>這正好是你最該先做對的狀態</strong> — 先把 mock 畫好，live 和 cached 只是多一張圖。</p>
+</div>
+
+<footer>
+  後端程式碼 <code>backend/</code>　·　seed 資料 <code>data/recipes.json</code>　·　型別 <code>mosaic/types/</code><br>
+  完整架構文件另見後端架構頁；這一頁只講對接。
+</footer>
+
+</div>

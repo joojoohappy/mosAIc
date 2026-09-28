@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 python-multipart
+python-dotenv
 
 # The provider's HTTP client goes here once a provider is actually selected.
 # Adding it before that means picking the wrong dependency under time pressure.

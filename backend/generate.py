@@ -32,6 +32,8 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # Paths resolve from this file, never from cwd -- uvicorn and pytest run from
 # different directories.
 ROOT = Path(__file__).resolve().parent
@@ -44,7 +46,10 @@ MAX_BYTES = 8 * 1024 * 1024
 RESULT_ID_RE = re.compile(r"^[0-9a-f]{32}$")
 SIDECAR_REQUIRED = ("image", "provider", "model", "generatedAt", "inputPhoto")
 
-API_KEY = os.environ.get("MOSAIC_API_KEY")
+# backend/.env (gitignored) holds the key; see .env.example. Loaded here rather
+# than in main.py so pregen.py and the tests get it too.
+load_dotenv(ROOT / ".env")
+API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 
 
 def _now() -> str:

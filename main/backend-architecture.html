@@ -288,7 +288,7 @@
 
 <div class="verdict">
   <p class="eyebrow">結論</p>
-  <p>用 Python（FastAPI）＋ Next.js rewrite proxy。<strong>live 生成是 Build Day 之前就要接好的東西</strong>；當天只切 env var，不寫 provider code。</p>
+  <p>用 Python（FastAPI）＋ Next.js rewrite proxy。<strong>live 生成是 Build Day 之前就要接好的東西</strong>；當天只填 <code>backend/.env</code>，不寫 provider code。</p>
   <small>HTTP layer 已經實際啟動並跑過所有失敗路徑。live provider 尚未實作 — 目前所有結果都是 <code>mock</code>。</small>
 </div>
 
@@ -607,6 +607,7 @@ GET  /api/results/{resultId}  <span class="cm">必須符合 ^[0-9a-f]{32}$，否
       <tr><td>圖片判斷用 magic bytes，上傳與 provider 輸出共用同一個函式</td><td>一個信任邊界，一份定義</td></tr>
       <tr><td>寫入順序：先圖片，後 JSON；JSON 走 <code>tmp</code> + <code>os.replace</code></td><td>前端拿到 resultId 會立刻 GET，不能讀到半份 JSON 或指向不存在的圖</td></tr>
       <tr><td>路徑用 <code>Path(__file__).parent</code> 解析，不相對 cwd</td><td>uvicorn 從 repo root 起、測試從 backend/ 起。<span class="done">兩種都實測過</span></td></tr>
+      <tr><td>API key 從 <code>backend/.env</code> 讀，不從 shell 環境變數</td><td><code>generate.py</code> 呼叫 <code>load_dotenv()</code>，所以 <code>unset</code> shell 變數<strong>不會</strong>關掉 live — 要註解掉 <code>.env</code> 裡那一行。範本在 <code>backend/.env.example</code></td></tr>
       <tr><td>resultId 進檔案路徑前必須通過 <code>^[0-9a-f]{32}$</code></td><td>traversal 是 404，不是一次檔案讀取</td></tr>
       <tr><td>timeout 由 pregen 實測值決定，零重試</td><td>現場重試會讓最壞等待加倍。<span class="kept">實作在 <code>_call_provider</code> 時一起寫</span></td></tr>
     </table>
@@ -644,7 +645,7 @@ img, mode, reason, meta = None, "mock", None, None
     </div>
     <div class="step">
       <span class="t">T+10</span>
-      <span class="b"><b>三個 route + fallback 路徑</b><span>不設 API_KEY。跑 test_generate.py</span></span>
+      <span class="b"><b>三個 route + fallback 路徑</b><span>把 backend/.env 的 key 註解掉。跑 test_generate.py</span></span>
     </div>
     <div class="step gate">
       <span class="t">T+30</span>
@@ -652,7 +653,7 @@ img, mode, reason, meta = None, "mock", None, None
     </div>
     <div class="step">
       <span class="t">T+35</span>
-      <span class="b"><b>切 env var 接 live</b><span>這步不寫 provider code — pregen 時已經寫好了</span></span>
+      <span class="b"><b>填 backend/.env 接 live</b><span>這步不寫 provider code — pregen 時已經寫好了</span></span>
     </div>
     <div class="step gate">
       <span class="t">T+50</span>
@@ -667,7 +668,7 @@ img, mode, reason, meta = None, "mock", None, None
     <table>
       <tr><th>決策閘門</th><th>做法</th></tr>
       <tr><td>T+30 慢速測試沒過（proxy 切斷長連線）</td><td>把 timeout 壓到 25 秒，其餘不變。<strong>不做 queue</strong></td></tr>
-      <tr><td>T+50 live 仍不穩</td><td><code>unset API_KEY</code>，用 cached 上台。標示清楚的 cached demo 算成功；上台會卡住的 live 不算</td></tr>
+      <tr><td>T+50 live 仍不穩</td><td>把 <code>backend/.env</code> 的 key 註解掉（<strong>不是</strong> <code>unset</code> — dotenv 會從 .env 讀回來），用 cached 上台。標示清楚的 cached demo 算成功；上台會卡住的 live 不算</td></tr>
       <tr><td>Build Day 前一份 pregen 都沒跑</td><td><strong>當天不碰 live。</strong>全程 mock 也是誠實的 demo</td></tr>
     </table>
   </div>
@@ -690,7 +691,7 @@ img, mode, reason, meta = None, "mock", None, None
   <div class="tw">
     <table>
       <tr><th>Build Day 前的狀態</th><th>當天的做法</th></tr>
-      <tr><td>三份 pregen 都成功</td><td>照時程走，T+35 只切 env var</td></tr>
+      <tr><td>三份 pregen 都成功</td><td>照時程走，T+35 只填 <code>backend/.env</code></td></tr>
       <tr><td>部分成功</td><td>成功的走 <code>cached</code>，失敗的走 <code>mock</code>。當天不補</td></tr>
       <tr><td><strong>一份都沒跑</strong></td><td><strong>當天不碰 live。</strong>T+35–50 改成多測失敗路徑和彩排。全程 <code>mock</code> 也是誠實的 demo</td></tr>
     </table>
@@ -769,7 +770,7 @@ img, mode, reason, meta = None, "mock", None, None
   <ol class="next">
     <li class="hot"><span><strong>選 provider、拿到 key</strong> — 唯一的關鍵路徑，其他都在等它</span></li>
     <li><span>實作 <code>_call_provider()</code>：model id、endpoint、request 格式當場讀線上文件，<strong>不憑記憶寫</strong></span></li>
-    <li><span><code>MOSAIC_API_KEY=... python pregen.py seed-01 &lt;照片&gt;</code> ×3 → 產生 fallback 與 provenance sidecar</span></li>
+    <li><span><code>python pregen.py seed-01 &lt;照片&gt;</code> ×3 → 產生 fallback 與 provenance sidecar</span></li>
     <li><span>等 Person 1 跑 <code>create-next-app</code> → 實測 proxy 與長連線</span></li>
     <li><span>核對三則 Threads 貼文的作者與 IG（目前全是 <code>null</code>）</span></li>
   </ol>
