@@ -1,0 +1,11 @@
+:root {
+  --mosaic-ink: #1e293b;
+  --mosaic-muted: #475569;
+  --mosaic-subtle: #94a3b8;
+  --mosaic-blue: #2563eb;
+  --mosaic-border: #e2e8f0;
+  --mosaic-surface: #f8fafc;
+  --mosaic-placeholder: #f1f5f9;
+  --mosaic-radius: 8px;
+  --mosaic-gap: 24px;
+}

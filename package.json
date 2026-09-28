@@ -1,0 +1,20 @@
+{
+  "name": "mosaic",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @mosaic/web dev",
+    "build": "pnpm --filter @mosaic/web build",
+    "start": "pnpm --filter @mosaic/web start",
+    "typecheck": "pnpm --filter @mosaic/web typecheck",
+    "test": "node --test --test-isolation=none tests/*.test.mjs",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "3.8.1"
+  }
+}
