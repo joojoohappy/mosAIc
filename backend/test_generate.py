@@ -88,6 +88,45 @@ class RecipeLookup(Base):
             self.assertIsNone(r["creatorInstagramUrl"], f"{r['id']} has an unverified IG")
 
 
+class PublicProjection(Base):
+    """The structural guarantee that prompt text cannot reach a client."""
+
+    def test_prompt_is_never_in_the_projection(self):
+        for r in generate.load_recipes():
+            with self.subTest(recipe=r["id"]):
+                self.assertNotIn("prompt", generate.public_recipe(r))
+
+    def test_projection_is_an_allowlist_not_a_denylist(self):
+        # A private field added to recipes.json later must stay private by default.
+        leaked = generate.public_recipe({**self.recipe, "internalNote": "secret"})
+        self.assertNotIn("internalNote", leaked)
+
+    def test_projection_shape_is_stable_even_when_a_field_is_absent(self):
+        # The frontend codes against a fixed shape; a thin record still yields
+        # every key, with null for what is missing.
+        thin = generate.public_recipe({"id": "seed-01"})
+        self.assertEqual(set(thin), set(generate.PUBLIC_FIELDS))
+        self.assertIsNone(thin["tryReady"])
+
+    def test_projection_carries_what_the_gallery_needs(self):
+        p = generate.public_recipe(self.recipe)
+        for field in ("id", "title", "summary", "sourcePostUrl", "tryReady"):
+            self.assertIn(field, p)
+
+
+class TryReadiness(Base):
+    def test_every_seed_is_still_unverified(self):
+        # Nobody has established a basis for running these prompts yet, so the
+        # honest default is false. When you flip one, flip it here too -- and be
+        # ready to say what the evidence was.
+        for r in generate.load_recipes():
+            self.assertFalse(r["tryReady"], f"{r['id']} claims tryReady without evidence")
+
+    def test_preview_images_are_still_absent(self):
+        for r in generate.load_recipes():
+            self.assertIsNone(r["previewImageUrl"], f"{r['id']} has an uncleared preview")
+
+
 class SidecarValidation(Base):
     """A sidecar is a claim about provenance. Only a complete, backed one counts."""
 
@@ -112,6 +151,26 @@ class SidecarValidation(Base):
     def test_sidecar_without_its_image_degrades(self):
         self.add_fallback(img=None)
         self.assertIsNone(generate._read_sidecar("seed-01"))
+
+    def test_fallback_that_is_not_an_image_degrades(self):
+        # A truncated or half-written fallback would otherwise be served as
+        # "cached" with a note claiming a real generation produced it.
+        self.add_fallback(img=b"<html>provider error page</html>")
+        self.assertIsNone(generate._read_sidecar("seed-01"))
+
+    def test_truncated_png_degrades(self):
+        self.add_fallback(img=PNG[:4])
+        self.assertIsNone(generate._read_sidecar("seed-01"))
+
+    def test_empty_fallback_file_degrades(self):
+        self.add_fallback(img=b"")
+        self.assertIsNone(generate._read_sidecar("seed-01"))
+
+    def test_corrupt_fallback_falls_through_to_mock_not_cached(self):
+        self.add_fallback(img=b"not an image")
+        r = generate.run_generation(self.recipe, JPEG)
+        self.assertEqual(r["mode"], "mock")
+        self.assertIsNone(r["imageUrl"])
 
     def test_image_path_cannot_escape_fallback_dir(self):
         self.add_fallback(image="../../../etc/passwd")

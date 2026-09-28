@@ -46,6 +46,13 @@ MAX_BYTES = 8 * 1024 * 1024
 RESULT_ID_RE = re.compile(r"^[0-9a-f]{32}$")
 SIDECAR_REQUIRED = ("image", "provider", "model", "generatedAt", "inputPhoto")
 
+# An ALLOWLIST, not a "drop the prompt" denylist: a private field added to
+# recipes.json later stays private by default instead of leaking on the next deploy.
+PUBLIC_FIELDS = (
+    "id", "title", "summary", "sourcePostUrl", "creatorName",
+    "creatorInstagramUrl", "previewImageUrl", "inputNote", "tryReady",
+)
+
 # backend/.env (gitignored) holds the key; see .env.example. Loaded here rather
 # than in main.py so pregen.py and the tests get it too.
 load_dotenv(ROOT / ".env")
@@ -79,16 +86,29 @@ def get_recipe(recipe_id: str) -> dict | None:
     return next((r for r in load_recipes() if r["id"] == recipe_id), None)
 
 
+def public_recipe(recipe: dict) -> dict:
+    """What a client is allowed to see. Never includes prompt text -- the whole
+    point of recipeId-in-prompt-out is that the prompt stays server-side."""
+    return {k: recipe.get(k) for k in PUBLIC_FIELDS}
+
+
 def _read_sidecar(recipe_id: str) -> dict | None:
     """A sidecar counts only if it parses, has every provenance field, and its image
-    really exists inside fallback/. Anything else degrades to mock -- never raises."""
+    exists inside fallback/ AND is really an image. Anything else degrades to mock --
+    never raises."""
     path = FALLBACK_DIR / f"{recipe_id}.json"
     try:
         meta = json.loads(path.read_text(encoding="utf-8"))
         if any(not meta.get(k) for k in SIDECAR_REQUIRED):
             return None
         img = (FALLBACK_DIR / meta["image"]).resolve()
-        if img.parent != FALLBACK_DIR.resolve() or not img.is_file():
+        if img.parent != FALLBACK_DIR.resolve():
+            return None
+        # Read the bytes rather than stat the path: a truncated or half-written
+        # fallback would otherwise be served as a "cached" result with a
+        # provenance note claiming a real generation produced it.
+        # Missing file raises OSError -> caught below -> degrades to mock.
+        if _is_image(img.read_bytes()) is None:
             return None
         return meta
     except (OSError, ValueError, TypeError):

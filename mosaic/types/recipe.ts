@@ -1,12 +1,12 @@
-// Shared contract. Mirrors data/recipes.json, which is the canonical source.
+// Shared contract. This is the PUBLIC projection the backend returns — not the
+// full record. Fetch it from GET /api/recipes; do not import data/recipes.json.
 //
-// Do NOT re-declare recipes as a TS constant. Read the JSON in a server component:
-//   import recipes from '../../data/recipes.json';
-// Keeping it server-side keeps prompt text out of the client bundle. That is a
-// product decision, not a technical one — relax it if the team decides prompts are
-// public works.
+// The backend never sends `prompt`. That used to be a convention ("only read the
+// JSON in a server component"); it is now structural — public_recipe() in
+// backend/generate.py is an allowlist, so a private field added later stays
+// private by default.
 
-export type Recipe = {
+export type PublicRecipe = {
   id: string;
   title: string;
   summary: string;
@@ -14,7 +14,13 @@ export type Recipe = {
   /** null until someone verifies the Threads post. Render "來源待確認", never a guess. */
   creatorName: string | null;
   creatorInstagramUrl: string | null;
-  /** Original prompt text, verbatim. Never sent from the browser to /api/generate. */
-  prompt: string;
+  /** null until a preview image is cleared for display. Currently null for all seeds. */
+  previewImageUrl: string | null;
   inputNote: string;
+  /**
+   * false = no basis has been established for running this prompt, so
+   * POST /api/generate returns 403 recipe_not_ready.
+   * Currently false for all three seeds — disable Try and say why.
+   */
+  tryReady: boolean;
 };

@@ -91,9 +91,9 @@
 
 <header>
   <h1>MOSAIC 前端對接</h1>
-  <p class="sub">兩個 endpoint，一個型別檔，四個步驟。後端是 Python / FastAPI，但你不需要知道 — 打 <code>/api/*</code> 就好。</p>
+  <p class="sub">四個 endpoint，一個型別檔，六個步驟。後端是 Python / FastAPI，但你不需要知道 — 打 <code>/api/*</code> 就好。</p>
   <div class="tags">
-    <span class="tag on">2 endpoints</span>
+    <span class="tag on">4 endpoints</span>
     <span class="tag">無 CORS</span>
     <span class="tag">無需輪詢</span>
     <span class="tag">後端 :8000</span>
@@ -115,7 +115,20 @@
 <div class="step">
   <div class="sh"><span class="sn">2</span><h2>型別（已在 repo 裡）</h2></div>
   <p class="lede"><code>mosaic/types/generation.ts</code> 和 <code>types/recipe.ts</code>，直接 import。</p>
-<pre><code><span class="cm">// types/generation.ts</span>
+<pre><code><span class="cm">// types/recipe.ts —— 後端回的是 public projection，沒有 prompt</span>
+export type PublicRecipe = {
+  id: string;
+  title: string;
+  summary: string;
+  sourcePostUrl: string;
+  creatorName:         string | null;  <span class="cm">// 未核實 → null</span>
+  creatorInstagramUrl: string | null;
+  previewImageUrl:     string | null;  <span class="cm">// 目前三份都是 null</span>
+  inputNote: string;
+  <span class="ac">tryReady</span>: boolean;             <span class="cm">// false → 不能生成，見步驟 4</span>
+};
+
+<span class="cm">// types/generation.ts</span>
 export type ResultMode = <span class="ac">'live' | 'cached' | 'mock'</span>;
 
 export type GenerationResult = {
@@ -126,18 +139,30 @@ export type GenerationResult = {
   imageUrl:   string | null;   <span class="cm">// mode==='mock' 時為 null</span>
   fallbackReason: string | null; <span class="cm">// 除錯用，不要顯示給使用者</span>
   recipeTitle:         string;
-  creatorName:         string | null;  <span class="cm">// 未核實 → null</span>
+  creatorName:         string | null;
   sourcePostUrl:       string;
-  creatorInstagramUrl: string | null;  <span class="cm">// 未核實 → null</span>
+  creatorInstagramUrl: string | null;
   createdAt:  string;          <span class="cm">// ISO 8601 UTC</span>
 };</code></pre>
-  <p class="lede">Recipe 資料讀 <code>data/recipes.json</code>（3 筆：<code>seed-01/02/03</code>）。<strong>只在 server component 讀</strong> — 裡面有 prompt 原文，不要進 client bundle。</p>
+  <p class="lede"><strong>改了：不要再 import <code>data/recipes.json</code>。</strong>改打 <code>GET /api/recipes</code>。後端只回上面這些欄位，<code>prompt</code> 現在是<strong>結構上</strong>拿不到，不再靠「只在 server component 讀」的紀律。</p>
 </div>
 
 <div class="step">
   <div class="sh"><span class="sn">3</span><h2>送出與取回</h2></div>
   <p class="lede"><strong><code>POST /api/generate</code> 是同步的，會卡住最多 60 秒。不需要輪詢</strong> — 但 loading state 一定要做，而且不要設短 timeout。</p>
-<pre><code><span class="cm">// 送圖 → 拿 resultId（這一步會等很久）</span>
+<pre><code><span class="cm">// Gallery / Recipe 頁：拿 recipe（沒有 prompt）</span>
+export async function listRecipes() {
+  const res = await fetch(<span class="ac">'/api/recipes'</span>);
+  const { recipes } = await res.json();
+  return recipes as PublicRecipe[];
+}
+export async function getRecipe(id: string) {
+  const res = await fetch(`/api/recipes/${id}`);
+  if (!res.ok) throw new Error(<span class="ac">'unknown_recipe'</span>);
+  return res.json() as Promise&lt;PublicRecipe&gt;;
+}
+
+<span class="cm">// 送圖 → 拿 resultId（這一步會等很久）</span>
 export async function generate(recipeId: string, file: File) {
   const body = new FormData();
   body.append(<span class="ac">'recipeId'</span>, recipeId);
@@ -156,6 +181,17 @@ export async function getResult(resultId: string) {
   return res.json() as Promise&lt;GenerationResult&gt;;
 }</code></pre>
   <p class="lede">限制：<code>jpeg</code> / <code>png</code> / <code>webp</code>，<strong>8MB 以內</strong>。後端用 magic bytes 驗證，改副檔名沒有用。</p>
+</div>
+
+
+<div class="warn">
+  <h2>tryReady = false 時，Try 按鈕要 disable</h2>
+  <p><strong>三份 seed 現在全部是 <code>tryReady: false</code></strong>，因為還沒有人確認我們有依據可以執行這些 prompt。直接送出會拿到 <code>403 recipe_not_ready</code>。</p>
+  <p>這不是使用者的錯，不要顯示成錯誤。Recipe 頁就把 Try 按鈕 disable，寫「這份 recipe 尚未開放試用」。</p>
+<pre><code>&lt;button disabled={!recipe.tryReady}&gt;
+  {recipe.tryReady ? <span class="ac">'用我的照片試試'</span> : <span class="ac">'尚未開放試用'</span>}
+&lt;/button&gt;</code></pre>
+  <p style="font-size:.88rem">等有人核實後會在 <code>data/recipes.json</code> 把它翻成 <code>true</code>，你的畫面不用改。</p>
 </div>
 
 <div class="step">
@@ -193,7 +229,7 @@ export async function getResult(resultId: string) {
 
 <div class="step">
   <div class="sh"><span class="sn">5</span><h2>錯誤</h2></div>
-  <p class="lede">失敗一律是 <code>{ "error": "..." }</code>。這六個是全部，不會有別的。</p>
+  <p class="lede">失敗一律是 <code>{ "error": "..." }</code>。這七個是全部，不會有別的。</p>
   <div class="tw">
     <table>
       <tr><th>HTTP</th><th>error</th><th>畫面要說什麼</th></tr>
@@ -201,6 +237,7 @@ export async function getResult(resultId: string) {
       <tr><td>400</td><td><code>missing_image</code></td><td>請先選一張照片</td></tr>
       <tr><td>400</td><td><code>unsupported_type</code></td><td>只支援 JPEG / PNG / WebP</td></tr>
       <tr><td>400</td><td><code>too_large</code></td><td>照片請小於 8MB</td></tr>
+      <tr><td><strong>403</strong></td><td><code><strong>recipe_not_ready</strong></code></td><td><strong>這份 recipe 尚未開放試用</strong>（不是錯誤，見上）</td></tr>
       <tr><td>404</td><td><code>unknown_recipe</code></td><td>找不到這份 recipe</td></tr>
       <tr><td>404</td><td><code>unknown_result</code></td><td>結果不存在或連結已失效</td></tr>
     </table>
@@ -212,7 +249,7 @@ export async function getResult(resultId: string) {
   <h2>三件事不能做</h2>
   <ol class="rules" style="margin-top:4px">
     <li><strong>不要自己寫結果的說明文字。</strong><code>sourceNote</code> 原樣顯示。那句話是伺服器產生的，決定了畫面有沒有謊報「這是你的照片生成的」。</li>
-    <li><strong>不要傳 prompt。</strong>只傳 <code>recipeId</code>，後端自己去查。傳 prompt 等於讓任何人打開 devtools 就能免費用我們的 API key。</li>
+    <li><strong>不要傳 prompt，也拿不到 prompt。</strong>只傳 <code>recipeId</code>。後端的 public projection 是 allowlist，prompt 不會出現在任何回應裡 — 這樣 devtools 也偷不走我們的 API key。</li>
     <li><strong>不要把 <code>creatorName</code> 的 null 填成任何名字。</strong>三份 seed 的作者都還沒核實。null 就顯示「來源待確認」＋原貼文連結。</li>
   </ol>
 </div>
@@ -226,8 +263,9 @@ export async function getResult(resultId: string) {
 curl localhost:3000/api/health          <span class="cm"># 走 proxy</span>
 
 <span class="cm"># 不等前端，先看一筆真實 payload 長什麼樣</span>
-curl -F recipeId=seed-01 -F image=@photo.jpg localhost:3000/api/generate</code></pre>
-  <p class="lede">後端還沒接生成服務，所以現在每一筆都是 <code>mock</code>（<code>imageUrl: null</code>）。<strong>這正好是你最該先做對的狀態</strong> — 先把 mock 畫好，live 和 cached 只是多一張圖。</p>
+curl localhost:3000/api/recipes            <span class="cm"># 確認回傳沒有 prompt</span>
+curl -F recipeId=seed-01 -F image=@photo.jpg localhost:3000/api/generate  <span class="cm"># 目前回 403</span></code></pre>
+  <p class="lede">現在的實際狀態：<strong>所有 recipe <code>tryReady: false</code> → 送出會 403</strong>；即使翻成 true，後端還沒接生成服務，每一筆都是 <code>mock</code>（<code>imageUrl: null</code>）。<strong>這兩個正好是你最該先做對的狀態</strong> — disabled 的 Try 按鈕和沒有圖的 Result，live 和 cached 只是多一張圖。</p>
 </div>
 
 <footer>

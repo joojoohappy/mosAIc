@@ -1,4 +1,4 @@
-"""MOSAIC backend — three routes and a static mount. That is the whole HTTP layer.
+"""MOSAIC backend — five routes and a static mount. That is the whole HTTP layer.
 
 Run:  uvicorn main:app --port 8000     (no --reload for a demo: one less variable)
 
@@ -19,7 +19,9 @@ from generate import (
     STORAGE,
     _is_image,
     get_recipe,
+    load_recipes,
     load_result,
+    public_recipe,
     run_generation,
 )
 
@@ -27,6 +29,14 @@ app = FastAPI(title="MOSAIC backend")
 
 STORAGE.mkdir(parents=True, exist_ok=True)  # results/ and fallback/ are made on demand
 app.mount("/static", StaticFiles(directory=STORAGE), name="static")
+
+# tryReady defaults to false until a human establishes a basis for running a prompt.
+# That is the honest default, but "every generate 403s" is a terrible thing to
+# discover during a demo, so say it at startup rather than at 14:00.
+if not any(r.get("tryReady") for r in load_recipes()):
+    print("[recipes] WARNING: no recipe has tryReady=true — POST /api/generate will "
+          "return 403 recipe_not_ready for all of them. Flip the ones you have "
+          "verified in data/recipes.json.")
 
 
 def _err(code: int, error: str) -> JSONResponse:
@@ -37,6 +47,18 @@ def _err(code: int, error: str) -> JSONResponse:
 def health():
     # Two lines that tell Person 1 "backend is down" instead of a generic error.
     return {"ok": True}
+
+
+@app.get("/api/recipes")
+def list_recipes():
+    # Public projection only. The client never receives prompt text.
+    return {"recipes": [public_recipe(r) for r in load_recipes()]}
+
+
+@app.get("/api/recipes/{recipe_id}")
+def read_recipe(recipe_id: str):
+    recipe = get_recipe(recipe_id)
+    return public_recipe(recipe) if recipe else _err(404, "unknown_recipe")
 
 
 @app.post("/api/generate")
@@ -54,6 +76,11 @@ def generate(
     recipe = get_recipe(recipeId)
     if recipe is None:
         return _err(404, "unknown_recipe")
+
+    # Checked before the upload is read: an unverified recipe must not reach the
+    # provider, and there is no reason to pull 8MB off the wire to find that out.
+    if not recipe.get("tryReady"):
+        return _err(403, "recipe_not_ready")
 
     if image is None:
         return _err(400, "missing_image")
