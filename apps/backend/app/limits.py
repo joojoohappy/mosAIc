@@ -8,7 +8,8 @@ fresh deployment cannot run up a large bill before anyone has looked at it.
     MOSAIC_DAILY_GLOBAL      paid model calls, all visitors/day  default 50
     MOSAIC_MAX_CONCURRENT    model calls running at once         default 2
 
-"Visitor" is the client IP (first X-Forwarded-For hop when behind a proxy).
+"Visitor" is the client IP, taken only from sources a client cannot forge
+(see client_id). X-Forwarded-For is never trusted: anyone can send one.
 Per-visitor and concurrency limits are kept in memory, so on a multi-instance
 host each instance enforces them separately. The global daily budget is the
 real cost guard: it is stored in the results store (local disk or Vercel Blob)
@@ -20,6 +21,7 @@ model provider as well.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import os
 import threading
@@ -48,10 +50,27 @@ def today() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
-def client_id(headers, fallback: str | None) -> str:
-    forwarded = headers.get("x-forwarded-for", "")
-    first = forwarded.split(",")[0].strip()
-    return first or fallback or "unknown"
+def client_id(headers, peer: str | None) -> str:
+    """Who is asking, for per-visitor limits. Never from X-Forwarded-For.
+
+    1. x-mosaic-client-ip, but only with the matching MOSAIC_PROXY_SECRET: the
+       website (apps/web/proxy.ts) sets it from the platform's own header.
+    2. x-real-ip, only on Vercel (whose edge overwrites it) or when
+       MOSAIC_TRUST_X_REAL_IP=1 behind your own reverse proxy.
+    3. The socket peer. Behind an untrusted proxy every visitor then shares one
+       bucket: stricter than intended, never looser.
+    """
+    secret = os.environ.get("MOSAIC_PROXY_SECRET", "")
+    if secret:
+        given = headers.get("x-mosaic-proxy-secret", "")
+        ip = headers.get("x-mosaic-client-ip", "").strip()
+        if ip and hmac.compare_digest(given.encode(), secret.encode()):
+            return "ip:" + ip[:64]
+    if os.environ.get("VERCEL") or os.environ.get("MOSAIC_TRUST_X_REAL_IP") == "1":
+        real = headers.get("x-real-ip", "").strip()
+        if real:
+            return "ip:" + real[:64]
+    return "peer:" + (peer or "unknown")
 
 
 def fingerprint(recipe_id: str, image: bytes) -> str:
@@ -103,7 +122,15 @@ class Limiter:
                 window.popleft()
             if len(window) >= cfg["rate_per_minute"]:
                 return "rate_limited"
-            day_key = (client, today())
+            day = today()
+            if len(self._daily) > 10_000:  # drop earlier days' counters
+                self._daily = defaultdict(int, {k: v for k, v in self._daily.items()
+                                                if k[1] == day})
+            if len(self._minute) > 10_000:
+                self._minute = defaultdict(deque, {k: w for k, w in self._minute.items()
+                                                   if w and now - w[-1] <= 60})
+                window = self._minute[client]
+            day_key = (client, day)
             if self._daily[day_key] >= cfg["daily_per_client"]:
                 return "daily_limit_reached"
             window.append(now)

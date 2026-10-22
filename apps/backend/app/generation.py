@@ -37,7 +37,7 @@ from dotenv import load_dotenv
 
 from . import provider
 from .limits import DailyBudget
-from .storage import results_store
+from .storage import blob_configured, results_store
 
 # Paths resolve from this file, never from cwd -- uvicorn and pytest run from
 # different directories.
@@ -215,6 +215,20 @@ def _write_result(recipe: dict, img: bytes | None, mode: str, meta: dict | None,
     return result
 
 
+def live_blocker() -> str | None:
+    """Why paid generation is switched off right now, or None if it is on.
+
+    On Vercel without a Blob store, results and the daily budget would live in
+    one instance's /tmp: links would break and the budget would reset on every
+    cold start. Better to stay in fallback mode than to pay for that.
+    """
+    if not API_KEY:
+        return "no_api_key"
+    if os.environ.get("VERCEL") and not blob_configured():
+        return "no_shared_storage"
+    return None
+
+
 def run_generation(recipe: dict, image_bytes: bytes) -> dict:
     """recipe + user photo -> a labelled result.
 
@@ -222,9 +236,9 @@ def run_generation(recipe: dict, image_bytes: bytes) -> dict:
     QuotaExceeded, before any paid call, when today's budget is used up.
     """
     img: bytes | None = None
-    mode, reason, meta = "mock", None, None
-
-    if API_KEY:
+    mode, meta = "mock", None
+    reason = live_blocker()
+    if reason is None:
         if not budget.reserve():
             raise QuotaExceeded
         try:
@@ -238,8 +252,6 @@ def run_generation(recipe: dict, image_bytes: bytes) -> dict:
             budget.record("failed")
             log.warning("provider failed recipe=%s reason=%s detail=%s",
                         recipe["id"], reason, f"{type(err).__name__}: {err}"[:300])
-    else:
-        reason = "no_api_key"
 
     if img is None:
         img, mode, meta = _load_fallback(recipe["id"])

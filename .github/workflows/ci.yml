@@ -30,7 +30,7 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           python -m venv apps/backend/.venv
-          apps/backend/.venv/bin/pip install -r apps/backend/requirements-dev.txt pip-audit
+          apps/backend/.venv/bin/pip install -r apps/backend/requirements-dev.txt
           pnpm exec playwright-core install --with-deps chromium
 
       - name: Run every check

@@ -70,10 +70,28 @@ class LimiterUnit(unittest.TestCase):
         with mock.patch.dict(os.environ, {"MOSAIC_DAILY_GLOBAL": "lots"}):
             self.assertEqual(limits.settings()["daily_global"], 50)
 
-    def test_client_id_prefers_first_forwarded_hop(self):
-        forwarded = {"x-forwarded-for": "1.2.3.4, 10.0.0.1"}
-        self.assertEqual(limits.client_id(forwarded, "9.9.9.9"), "1.2.3.4")
-        self.assertEqual(limits.client_id({}, "9.9.9.9"), "9.9.9.9")
+    def test_client_id_ignores_forwarded_for(self):
+        spoofed = {"x-forwarded-for": "1.2.3.4, 10.0.0.1"}
+        with mock.patch.dict(os.environ, {"VERCEL": "", "MOSAIC_PROXY_SECRET": "",
+                                          "MOSAIC_TRUST_X_REAL_IP": ""}):
+            self.assertEqual(limits.client_id(spoofed, "9.9.9.9"), "peer:9.9.9.9")
+            # x-real-ip is only trusted where the platform sets it.
+            self.assertEqual(limits.client_id({"x-real-ip": "5.5.5.5"}, "9.9.9.9"),
+                             "peer:9.9.9.9")
+        with mock.patch.dict(os.environ, {"VERCEL": "1", "MOSAIC_PROXY_SECRET": ""}):
+            self.assertEqual(limits.client_id({"x-real-ip": "5.5.5.5", **spoofed}, "9"),
+                             "ip:5.5.5.5")
+
+    def test_client_ip_from_website_needs_the_secret(self):
+        sent = {"x-mosaic-client-ip": "7.7.7.7", "x-mosaic-proxy-secret": "s3cret"}
+        forged = {**sent, "x-mosaic-proxy-secret": "guess"}
+        with mock.patch.dict(os.environ, {"VERCEL": "", "MOSAIC_PROXY_SECRET": "s3cret",
+                                          "MOSAIC_TRUST_X_REAL_IP": ""}):
+            self.assertEqual(limits.client_id(sent, "9.9.9.9"), "ip:7.7.7.7")
+            self.assertEqual(limits.client_id(forged, "9.9.9.9"), "peer:9.9.9.9")
+        with mock.patch.dict(os.environ, {"VERCEL": "", "MOSAIC_PROXY_SECRET": ""}):
+            # No secret configured: the header is ignored entirely.
+            self.assertEqual(limits.client_id(sent, "9.9.9.9"), "peer:9.9.9.9")
 
 
 class ApiLimits(unittest.TestCase):
@@ -119,6 +137,26 @@ class ApiLimits(unittest.TestCase):
         # 2 paid calls fit today's budget, the 3rd hits it, the 4th the minute limit.
         self.assertEqual(codes, [200, 200, 503, 429])
         self.assertEqual(self.post(photo(color=(9, 9, 9))).json(), {"error": "rate_limited"})
+
+    def test_spoofed_forwarded_for_does_not_reset_the_limit(self):
+        codes = []
+        for i in range(4):
+            r = self.client.post(
+                "/api/generate", data={"recipeId": "seed-01"},
+                files={"image": ("p.jpg", photo(color=(0, 60 * i, 0)), "image/jpeg")},
+                headers={"x-forwarded-for": f"203.0.113.{i}",
+                         "x-mosaic-client-ip": f"198.51.100.{i}"})
+            codes.append(r.status_code)
+        # Same visitor every time despite four different made-up addresses.
+        self.assertEqual(codes[-1], 429)
+
+    def test_vercel_without_blob_never_pays(self):
+        with mock.patch.dict(os.environ, {"VERCEL": "1"}):
+            self.assertFalse(self.client.get("/api/health").json()["liveGeneration"])
+            rid = self.post().json()["resultId"]
+            result = self.client.get(f"/api/results/{rid}").json()
+        self.assertEqual(result["fallbackReason"], "no_shared_storage")
+        self.provider.assert_not_called()
 
     def test_global_budget_stops_paid_calls(self):
         self.post(photo(color=(50, 50, 50)))

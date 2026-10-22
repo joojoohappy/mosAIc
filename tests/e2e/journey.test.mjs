@@ -126,6 +126,7 @@ before(async () => {
         BLOB_READ_WRITE_TOKEN: "",
         BLOB_STORE_ID: "",
         VERCEL: "",
+        MOSAIC_PROXY_SECRET: "e2e-proxy-secret",
       },
     },
   );
@@ -156,6 +157,10 @@ before(async () => {
         ...process.env,
         BACKEND_URL: `http://127.0.0.1:${apiPort}`,
         PORT: "",
+        // Every upload goes through apps/web/proxy.ts, which signs the
+        // visitor IP as it would on Vercel (browsers below send x-real-ip).
+        MOSAIC_PROXY_SECRET: "e2e-proxy-secret",
+        MOSAIC_TRUST_X_REAL_IP: "1",
       },
     },
   );
@@ -178,7 +183,10 @@ after(async () => {
 });
 
 async function page(viewport = { width: 1280, height: 800 }) {
-  const ctx = await browser.newContext({ viewport });
+  const ctx = await browser.newContext({
+    viewport,
+    extraHTTPHeaders: { "x-real-ip": "198.51.100.10" },
+  });
   const p = await ctx.newPage();
   const errors = [];
   p.on("pageerror", (e) => errors.push(e.message));

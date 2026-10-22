@@ -20,4 +20,13 @@ jobs:
         env:
           # Optional: Vercel "Protection Bypass for Automation" secret.
           VERCEL_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: bash scripts/smoke.sh "${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}"
+          URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+        run: |
+          set +e
+          bash scripts/smoke.sh "$URL"
+          code=$?
+          if [ "$code" = 3 ] && [ -z "$VERCEL_BYPASS" ]; then
+            echo "::notice::Skipped: deployment is protected and the VERCEL_AUTOMATION_BYPASS_SECRET repo secret is not set."
+            exit 0
+          fi
+          exit "$code"

@@ -7,7 +7,8 @@
 #
 # Read-only by default: it never calls the image model unless SMOKE_GENERATE=1.
 # For a Vercel preview behind Deployment Protection, set VERCEL_BYPASS to the
-# project's "Protection Bypass for Automation" secret.
+# project's "Protection Bypass for Automation" secret. Without it, a protected
+# deployment exits with code 3 and a message saying so.
 set -uo pipefail
 BASE=${1:?usage: smoke.sh <website-url>}
 BASE=${BASE%/}
@@ -17,25 +18,38 @@ TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 pass=0; fail=0
 ok()  { pass=$((pass+1)); printf '  ok    %s\n' "$1"; }
 bad() { fail=$((fail+1)); printf '  FAIL  %s\n' "$1"; }
-get() { curl -s "${HDR[@]}" -o "$TMP/body" -w '%{http_code}' --max-time 30 "$@"; }
+get() { curl -s "${HDR[@]}" -o "$TMP/body" -D "$TMP/head" -w '%{http_code}' --max-time 30 "$@"; }
+protected() { # Vercel Deployment Protection: a 401/403 page or a redirect to its SSO
+  case "$1" in
+    401|403) grep -qi vercel "$TMP/body" 2>/dev/null ;;
+    302|303|307|308) grep -qiE '^location: *https://(vercel\.com|[^/]*\.vercel\.(com|app))/(sso|login)' "$TMP/head" 2>/dev/null \
+                       || grep -qiE '^location: .*_vercel_sso' "$TMP/head" 2>/dev/null ;;
+    *) return 1 ;;
+  esac
+}
 expect() { # name want-code url [grep-pattern]
   local code; code=$(get "$3")
-  if [ "$code" = "401" ] || [ "$code" = "403" ] && grep -qi vercel "$TMP/body" 2>/dev/null; then
-    bad "$1: blocked by Vercel Deployment Protection (set VERCEL_BYPASS)"; return
-  fi
+  if protected "$code"; then bad "$1: blocked by Vercel Deployment Protection (set VERCEL_BYPASS)"; return; fi
   if [ "$code" != "$2" ]; then bad "$1: HTTP $code, want $2"; return; fi
   if [ -n "${4:-}" ] && ! grep -q -- "$4" "$TMP/body"; then bad "$1: body lacks $4"; return; fi
   ok "$1"
 }
 
 echo "smoke: $BASE"
+code=$(get "$BASE/")
+if protected "$code"; then
+  echo "  This deployment is behind Vercel Deployment Protection (HTTP $code)."
+  echo "  Set VERCEL_BYPASS to the project's \"Protection Bypass for Automation\" secret."
+  exit 3
+fi
 expect "home page"                 200 "$BASE/"                    "mosAIc"
 expect "privacy page"              200 "$BASE/privacy"             "隱私說明"
 expect "terms page"                200 "$BASE/terms"               "使用條款"
 expect "API health via website"    200 "$BASE/api/health"          '"ok":true'
-grep -q '"liveGeneration":true' "$TMP/body" \
-  && echo "        (live generation is configured)" \
-  || echo "        (no model key: results will be cached/mock)"
+if grep -q '"liveGeneration":true' "$TMP/body"; then echo "        (live generation is on)"
+elif grep -q '"liveGeneration":false' "$TMP/body"; then
+  echo "        (live generation is off: no model key, or no Blob store on Vercel)"
+fi
 expect "recipe list"               200 "$BASE/api/recipes"         '"recipes"'
 cp "$TMP/body" "$TMP/recipes.json"
 expect "recipe detail"             200 "$BASE/api/recipes/seed-01" '"id":"seed-01"'

@@ -89,6 +89,9 @@ app = FastAPI(title="MOSAIC backend", docs_url=None, redoc_url=None, openapi_url
 app.add_middleware(BodySizeLimit, limit=MAX_REQUEST_BYTES)
 limiter = Limiter()
 
+if generation.live_blocker() == "no_shared_storage":
+    log.warning("GEMINI_API_KEY is set but no Blob store is connected on Vercel: "
+                "live generation stays off (connect a Blob store to turn it on)")
 if not any(r.get("tryReady") for r in load_recipes()):
     log.warning("no recipe has tryReady=true: POST /api/generate will return 403 "
                 "recipe_not_ready for all of them (apps/backend/data/recipes.json)")
@@ -102,7 +105,7 @@ def _err(code: int, error: str) -> JSONResponse:
 def health():
     # Lets the frontend say "backend is down" instead of a generic error, and
     # tell the user up front whether results will be live or a fallback.
-    return {"ok": True, "liveGeneration": bool(generation.API_KEY)}
+    return {"ok": True, "liveGeneration": generation.live_blocker() is None}
 
 
 @app.get("/api/recipes")
