@@ -1,0 +1,20 @@
+cost   0.3MP  verify          0.03 ms
+cost   0.3MP  eoi             0.03 ms
+cost   0.3MP  draft_load      1.38 ms
+cost   0.3MP  full_load       2.23 ms
+cost   3MP    verify          0.03 ms
+cost   3MP    eoi             0.03 ms
+cost   3MP    draft_load     13.06 ms
+cost   3MP    full_load      22.02 ms
+cost   12MP   verify          0.02 ms
+cost   12MP   eoi             0.03 ms
+cost   12MP   draft_load     50.95 ms
+cost   12MP   full_load     108.90 ms
+reject truncated to 99%                     verify=False eoi=True  draft_load=True  full_load=True 
+reject truncated to 90%                     verify=False eoi=True  draft_load=True  full_load=True 
+reject truncated to 50%                     verify=False eoi=True  draft_load=True  full_load=True 
+reject truncated to 10%                     verify=False eoi=True  draft_load=True  full_load=True 
+reject truncated to 1%                      verify=False eoi=True  draft_load=True  full_load=True 
+reject 20KB zeroed mid-file                 verify=False eoi=False draft_load=False full_load=False
+reject valid (control, must pass)           verify=False eoi=False draft_load=False full_load=False
+reject valid + trailing bytes (must pass)   verify=False eoi=True  draft_load=False full_load=False

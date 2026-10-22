@@ -1,0 +1,14 @@
+overhead 0.3MP 640x480     0.12MB rep=1 p50=    7.2 p95=    9.8 cpu/req=4.7ms
+overhead 0.3MP 640x480     0.12MB rep=2 p50=    8.7 p95=   11.0 cpu/req=5.7ms
+overhead 0.3MP 640x480     0.12MB rep=3 p50=    9.0 p95=   11.9 cpu/req=5.6ms
+overhead 3MP 2048x1536     1.24MB rep=1 p50=   25.2 p95=   34.0 cpu/req=21.0ms
+overhead 3MP 2048x1536     1.24MB rep=2 p50=   26.0 p95=   33.2 cpu/req=21.8ms
+overhead 3MP 2048x1536     1.24MB rep=3 p50=   25.1 p95=   35.2 cpu/req=21.5ms
+overhead 12MP 4032x3024    4.81MB rep=1 p50=   79.9 p95=  109.2 cpu/req=75.1ms
+overhead 12MP 4032x3024    4.81MB rep=2 p50=   79.9 p95=  109.2 cpu/req=75.2ms
+overhead 12MP 4032x3024    4.81MB rep=3 p50=   79.5 p95=  110.6 cpu/req=76.3ms
+shedding burst=10 statuses={'503': 8, '200': 2} provider_calls=2 served_p50=2141.5 shed_max=85.9
+shedding burst=20 statuses={'503': 18, '200': 2} provider_calls=2 served_p50=2160.0 shed_max=123.2
+memory c=1   upload=7.64MB idle=51.4MB peak=94.6MB statuses={'200': 2}
+memory c=4   upload=7.64MB idle=51.5MB peak=205.6MB statuses={'200': 8}
+memory c=16  upload=7.64MB idle=51.4MB peak=534.5MB statuses={'200': 32}

@@ -1,0 +1,14 @@
+{
+  "benchmark": "B4 backend container build and startup",
+  "measuredAt": "2026-10-22T17:44:18Z",
+  "docker": "29.9.1",
+  "context": "apps/backend",
+  "note": "Build skipped: Docker Hub returned 429 for python:3.12-slim. Image = PR #2 Dockerfile built earlier in this session (first build 57.0 s incl. base pull + pip via proxy), with this branch's app/ layered on top.",
+  "cold_build_no_cache_s": null,
+  "warm_rebuild_s": null,
+  "image_size_mb": 268,
+  "image_declares_healthcheck": "no",
+  "container_runs_as_uid": 0,
+  "start_to_healthy_s": [0.996,0.928,1.160,1.053,1.050],
+  "restart_to_healthy_s": [1.272,1.390,1.383]
+}

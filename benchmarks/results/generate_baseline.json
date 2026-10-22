@@ -1,0 +1,266 @@
+{
+  "benchmark": "B2 generate pipeline (SIMULATED provider: local fake, not Gemini)",
+  "environment": {
+    "measuredAt": "2026-10-22T17:30:31Z",
+    "host": "ephemeral cloud sandbox (shared, not dedicated hardware)",
+    "os": "Linux-6.18.44-fc-v140-x86_64-with-glibc2.39",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "logicalCpus": 4,
+    "memoryGiB": 15.7,
+    "python": "Python 3.13.16",
+    "gitCommit": "fbbc625",
+    "backendSource": "/tmp/claude-0/-home-claude/34a81406-71ac-5d15-b36c-7fe5db55567a/scratchpad/baseline/apps/backend"
+  },
+  "overhead": [
+    {
+      "n": 100,
+      "p50_ms": 7.24,
+      "p95_ms": 9.76,
+      "p99_ms": 10.89,
+      "mean_ms": 7.52,
+      "max_ms": 12.41,
+      "throughput_rps": 132.9,
+      "statuses": {
+        "200": 100
+      },
+      "photo": "0.3MP 640x480",
+      "bytes": 122658,
+      "rep": 1,
+      "server_cpu_ms_per_req": 4.7,
+      "server_rss_peak_mb": 57.2
+    },
+    {
+      "n": 100,
+      "p50_ms": 8.69,
+      "p95_ms": 11.02,
+      "p99_ms": 11.36,
+      "mean_ms": 8.9,
+      "max_ms": 11.47,
+      "throughput_rps": 112.3,
+      "statuses": {
+        "200": 100
+      },
+      "photo": "0.3MP 640x480",
+      "bytes": 122658,
+      "rep": 2,
+      "server_cpu_ms_per_req": 5.7,
+      "server_rss_peak_mb": 57.3
+    },
+    {
+      "n": 100,
+      "p50_ms": 9.02,
+      "p95_ms": 11.94,
+      "p99_ms": 18.87,
+      "mean_ms": 9.4,
+      "max_ms": 23.33,
+      "throughput_rps": 106.3,
+      "statuses": {
+        "200": 100
+      },
+      "photo": "0.3MP 640x480",
+      "bytes": 122658,
+      "rep": 3,
+      "server_cpu_ms_per_req": 5.6,
+      "server_rss_peak_mb": 57.3
+    },
+    {
+      "n": 100,
+      "p50_ms": 25.21,
+      "p95_ms": 34.02,
+      "p99_ms": 35.03,
+      "mean_ms": 26.65,
+      "max_ms": 36.42,
+      "throughput_rps": 37.5,
+      "statuses": {
+        "200": 100
+      },
+      "photo": "3MP 2048x1536",
+      "bytes": 1243241,
+      "rep": 1,
+      "server_cpu_ms_per_req": 21.0,
+      "server_rss_peak_mb": 65.5
+    },
+    {
+      "n": 100,
+      "p50_ms": 25.96,
+      "p95_ms": 33.18,
+      "p99_ms": 36.22,
+      "mean_ms": 27.12,
+      "max_ms": 39.72,
+      "throughput_rps": 36.9,
+      "statuses": {
+        "200": 100
+      },
+      "photo": "3MP 2048x1536",
+      "bytes": 1243241,
+      "rep": 2,
+      "server_cpu_ms_per_req": 21.8,
+      "server_rss_peak_mb": 65.5
+    },
+    {
+      "n": 100,
+      "p50_ms": 25.1,
+      "p95_ms": 35.25,
+      "p99_ms": 36.29,
+      "mean_ms": 26.94,
+      "max_ms": 36.38,
+      "throughput_rps": 37.1,
+      "statuses": {
+        "200": 100
+      },
+      "photo": "3MP 2048x1536",
+      "bytes": 1243241,
+      "rep": 3,
+      "server_cpu_ms_per_req": 21.5,
+      "server_rss_peak_mb": 65.6
+    },
+    {
+      "n": 100,
+      "p50_ms": 79.92,
+      "p95_ms": 109.21,
+      "p99_ms": 128.15,
+      "mean_ms": 83.78,
+      "max_ms": 134.42,
+      "throughput_rps": 11.9,
+      "statuses": {
+        "200": 100
+      },
+      "photo": "12MP 4032x3024",
+      "bytes": 4812271,
+      "rep": 1,
+      "server_cpu_ms_per_req": 75.1,
+      "server_rss_peak_mb": 82.6
+    },
+    {
+      "n": 100,
+      "p50_ms": 79.94,
+      "p95_ms": 109.2,
+      "p99_ms": 114.67,
+      "mean_ms": 83.47,
+      "max_ms": 120.97,
+      "throughput_rps": 12.0,
+      "statuses": {
+        "200": 100
+      },
+      "photo": "12MP 4032x3024",
+      "bytes": 4812271,
+      "rep": 2,
+      "server_cpu_ms_per_req": 75.2,
+      "server_rss_peak_mb": 82.6
+    },
+    {
+      "n": 100,
+      "p50_ms": 79.45,
+      "p95_ms": 110.59,
+      "p99_ms": 119.13,
+      "mean_ms": 83.82,
+      "max_ms": 124.67,
+      "throughput_rps": 11.9,
+      "statuses": {
+        "200": 100
+      },
+      "photo": "12MP 4032x3024",
+      "bytes": 4812271,
+      "rep": 3,
+      "server_cpu_ms_per_req": 76.3,
+      "server_rss_peak_mb": 82.9
+    }
+  ],
+  "shedding": [
+    {
+      "n": 10,
+      "p50_ms": 83.55,
+      "p95_ms": 2141.01,
+      "p99_ms": 2141.41,
+      "mean_ms": 494.65,
+      "max_ms": 2141.51,
+      "throughput_rps": 4.7,
+      "statuses": {
+        "503": 8,
+        "200": 2
+      },
+      "burst": 10,
+      "provider_calls": 2,
+      "served_p50_ms": 2141.5,
+      "shed_max_ms": 85.9,
+      "errors": [
+        "None",
+        "server_busy"
+      ]
+    },
+    {
+      "n": 20,
+      "p50_ms": 107.09,
+      "p95_ms": 2135.76,
+      "p99_ms": 2155.11,
+      "mean_ms": 312.73,
+      "max_ms": 2159.95,
+      "throughput_rps": 9.2,
+      "statuses": {
+        "503": 18,
+        "200": 2
+      },
+      "burst": 20,
+      "provider_calls": 2,
+      "served_p50_ms": 2160.0,
+      "shed_max_ms": 123.2,
+      "errors": [
+        "None",
+        "server_busy"
+      ]
+    }
+  ],
+  "memory": [
+    {
+      "n": 2,
+      "p50_ms": 1173.82,
+      "p95_ms": 1208.71,
+      "p99_ms": 1211.82,
+      "mean_ms": 1173.82,
+      "max_ms": 1212.59,
+      "throughput_rps": 0.9,
+      "statuses": {
+        "200": 2
+      },
+      "concurrency": 1,
+      "upload_mb": 7.64,
+      "rss_idle_mb": 51.4,
+      "rss_peak_mb": 94.6,
+      "rss_growth_mb": 43.2
+    },
+    {
+      "n": 8,
+      "p50_ms": 1376.62,
+      "p95_ms": 1540.42,
+      "p99_ms": 1540.63,
+      "mean_ms": 1379.93,
+      "max_ms": 1540.69,
+      "throughput_rps": 2.8,
+      "statuses": {
+        "200": 8
+      },
+      "concurrency": 4,
+      "upload_mb": 7.64,
+      "rss_idle_mb": 51.5,
+      "rss_peak_mb": 205.6,
+      "rss_growth_mb": 154.1
+    },
+    {
+      "n": 32,
+      "p50_ms": 2093.94,
+      "p95_ms": 3328.72,
+      "p99_ms": 3424.53,
+      "mean_ms": 2253.16,
+      "max_ms": 3433.49,
+      "throughput_rps": 5.9,
+      "statuses": {
+        "200": 32
+      },
+      "concurrency": 16,
+      "upload_mb": 7.64,
+      "rss_idle_mb": 51.4,
+      "rss_peak_mb": 534.5,
+      "rss_growth_mb": 483.1
+    }
+  ]
+}

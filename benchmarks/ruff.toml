@@ -1,0 +1,3 @@
+# Same rules as the backend; report-printing code gets longer lines.
+extend = "../apps/backend/ruff.toml"
+line-length = 125

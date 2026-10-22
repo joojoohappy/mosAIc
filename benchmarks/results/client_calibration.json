@@ -1,0 +1,208 @@
+{
+  "benchmark": "Load-generator calibration (GET /api/health)",
+  "environment": {
+    "measuredAt": "2026-10-22T17:51:50Z",
+    "host": "ephemeral cloud sandbox (shared, not dedicated hardware)",
+    "os": "Linux-6.18.44-fc-v140-x86_64-with-glibc2.39",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "logicalCpus": 4,
+    "memoryGiB": 15.7,
+    "python": "Python 3.13.16",
+    "gitCommit": "fbbc625",
+    "backendSource": "/home/claude/mosaic/apps/backend"
+  },
+  "rows": [
+    {
+      "n": 1000,
+      "p50_ms": 6.76,
+      "p95_ms": 38.64,
+      "p99_ms": 166.63,
+      "mean_ms": 13.68,
+      "max_ms": 467.5,
+      "throughput_rps": 583.6,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "python httpx asyncio",
+      "concurrency": 8,
+      "rep": 1,
+      "server_cpu_util": 0.26
+    },
+    {
+      "n": 1000,
+      "p50_ms": 2.05,
+      "p95_ms": 3.84,
+      "p99_ms": 6.0,
+      "mean_ms": 2.35,
+      "max_ms": 12.36,
+      "throughput_rps": 3262.2,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "k6",
+      "concurrency": 8,
+      "rep": 1,
+      "server_cpu_util": 0.55
+    },
+    {
+      "n": 1000,
+      "p50_ms": 7.36,
+      "p95_ms": 24.71,
+      "p99_ms": 114.27,
+      "mean_ms": 13.5,
+      "max_ms": 615.2,
+      "throughput_rps": 590.9,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "python httpx asyncio",
+      "concurrency": 8,
+      "rep": 2,
+      "server_cpu_util": 0.28
+    },
+    {
+      "n": 1000,
+      "p50_ms": 2.43,
+      "p95_ms": 4.71,
+      "p99_ms": 6.05,
+      "mean_ms": 2.7,
+      "max_ms": 13.08,
+      "throughput_rps": 2841.3,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "k6",
+      "concurrency": 8,
+      "rep": 2,
+      "server_cpu_util": 0.67
+    },
+    {
+      "n": 1000,
+      "p50_ms": 7.25,
+      "p95_ms": 31.47,
+      "p99_ms": 123.13,
+      "mean_ms": 12.99,
+      "max_ms": 267.46,
+      "throughput_rps": 614.2,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "python httpx asyncio",
+      "concurrency": 8,
+      "rep": 3,
+      "server_cpu_util": 0.29
+    },
+    {
+      "n": 1000,
+      "p50_ms": 2.64,
+      "p95_ms": 4.86,
+      "p99_ms": 6.37,
+      "mean_ms": 2.87,
+      "max_ms": 9.8,
+      "throughput_rps": 2664.8,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "k6",
+      "concurrency": 8,
+      "rep": 3,
+      "server_cpu_util": 0.77
+    },
+    {
+      "n": 1000,
+      "p50_ms": 106.06,
+      "p95_ms": 418.01,
+      "p99_ms": 593.64,
+      "mean_ms": 142.11,
+      "max_ms": 960.46,
+      "throughput_rps": 223.5,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "python httpx asyncio",
+      "concurrency": 32,
+      "rep": 1,
+      "server_cpu_util": 0.15
+    },
+    {
+      "n": 1000,
+      "p50_ms": 11.89,
+      "p95_ms": 17.44,
+      "p99_ms": 22.48,
+      "mean_ms": 12.3,
+      "max_ms": 41.56,
+      "throughput_rps": 2521.6,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "k6",
+      "concurrency": 32,
+      "rep": 1,
+      "server_cpu_util": 0.59
+    },
+    {
+      "n": 1000,
+      "p50_ms": 102.4,
+      "p95_ms": 385.47,
+      "p99_ms": 603.3,
+      "mean_ms": 141.94,
+      "max_ms": 889.13,
+      "throughput_rps": 222.7,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "python httpx asyncio",
+      "concurrency": 32,
+      "rep": 2,
+      "server_cpu_util": 0.14
+    },
+    {
+      "n": 1000,
+      "p50_ms": 13.34,
+      "p95_ms": 19.23,
+      "p99_ms": 34.05,
+      "mean_ms": 14.08,
+      "max_ms": 62.8,
+      "throughput_rps": 2211.5,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "k6",
+      "concurrency": 32,
+      "rep": 2,
+      "server_cpu_util": 0.72
+    },
+    {
+      "n": 1000,
+      "p50_ms": 110.2,
+      "p95_ms": 376.1,
+      "p99_ms": 527.81,
+      "mean_ms": 141.98,
+      "max_ms": 882.57,
+      "throughput_rps": 223.4,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "python httpx asyncio",
+      "concurrency": 32,
+      "rep": 3,
+      "server_cpu_util": 0.16
+    },
+    {
+      "n": 1000,
+      "p50_ms": 10.56,
+      "p95_ms": 15.5,
+      "p99_ms": 20.19,
+      "mean_ms": 10.96,
+      "max_ms": 36.08,
+      "throughput_rps": 2822.6,
+      "statuses": {
+        "200": 1000
+      },
+      "client": "k6",
+      "concurrency": 32,
+      "rep": 3,
+      "server_cpu_util": 0.69
+    }
+  ]
+}

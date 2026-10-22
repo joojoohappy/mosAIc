@@ -1,0 +1,147 @@
+{
+  "benchmark": "Upload validation alternatives (in-process, Pillow)",
+  "environment": {
+    "measuredAt": "2026-10-22T17:43:01Z",
+    "host": "ephemeral cloud sandbox (shared, not dedicated hardware)",
+    "os": "Linux-6.18.44-fc-v140-x86_64-with-glibc2.39",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "logicalCpus": 4,
+    "memoryGiB": 15.7,
+    "python": "Python 3.13.16",
+    "gitCommit": "fbbc625",
+    "backendSource": "/home/claude/mosaic/apps/backend"
+  },
+  "pillow": "13.0.0",
+  "cost": [
+    {
+      "photo": "0.3MP",
+      "bytes": 122658,
+      "method": "verify",
+      "median_ms": 0.03
+    },
+    {
+      "photo": "0.3MP",
+      "bytes": 122658,
+      "method": "eoi",
+      "median_ms": 0.03
+    },
+    {
+      "photo": "0.3MP",
+      "bytes": 122658,
+      "method": "draft_load",
+      "median_ms": 1.38
+    },
+    {
+      "photo": "0.3MP",
+      "bytes": 122658,
+      "method": "full_load",
+      "median_ms": 2.23
+    },
+    {
+      "photo": "3MP",
+      "bytes": 1243241,
+      "method": "verify",
+      "median_ms": 0.03
+    },
+    {
+      "photo": "3MP",
+      "bytes": 1243241,
+      "method": "eoi",
+      "median_ms": 0.03
+    },
+    {
+      "photo": "3MP",
+      "bytes": 1243241,
+      "method": "draft_load",
+      "median_ms": 13.06
+    },
+    {
+      "photo": "3MP",
+      "bytes": 1243241,
+      "method": "full_load",
+      "median_ms": 22.02
+    },
+    {
+      "photo": "12MP",
+      "bytes": 4812271,
+      "method": "verify",
+      "median_ms": 0.02
+    },
+    {
+      "photo": "12MP",
+      "bytes": 4812271,
+      "method": "eoi",
+      "median_ms": 0.03
+    },
+    {
+      "photo": "12MP",
+      "bytes": 4812271,
+      "method": "draft_load",
+      "median_ms": 50.95
+    },
+    {
+      "photo": "12MP",
+      "bytes": 4812271,
+      "method": "full_load",
+      "median_ms": 108.9
+    }
+  ],
+  "detection": [
+    {
+      "case": "truncated to 99%",
+      "verify": false,
+      "eoi": true,
+      "draft_load": true,
+      "full_load": true
+    },
+    {
+      "case": "truncated to 90%",
+      "verify": false,
+      "eoi": true,
+      "draft_load": true,
+      "full_load": true
+    },
+    {
+      "case": "truncated to 50%",
+      "verify": false,
+      "eoi": true,
+      "draft_load": true,
+      "full_load": true
+    },
+    {
+      "case": "truncated to 10%",
+      "verify": false,
+      "eoi": true,
+      "draft_load": true,
+      "full_load": true
+    },
+    {
+      "case": "truncated to 1%",
+      "verify": false,
+      "eoi": true,
+      "draft_load": true,
+      "full_load": true
+    },
+    {
+      "case": "20KB zeroed mid-file",
+      "verify": false,
+      "eoi": false,
+      "draft_load": false,
+      "full_load": false
+    },
+    {
+      "case": "valid (control, must pass)",
+      "verify": false,
+      "eoi": false,
+      "draft_load": false,
+      "full_load": false
+    },
+    {
+      "case": "valid + trailing bytes (must pass)",
+      "verify": false,
+      "eoi": true,
+      "draft_load": false,
+      "full_load": false
+    }
+  ]
+}

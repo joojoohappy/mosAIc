@@ -1,0 +1,25 @@
+# tests/test_hardening.py run against PR #2 head fbbc625 (baseline worktree)
+test_same_name_from_many_writers (tests.test_hardening.ConcurrentLocalWrites.test_same_name_from_many_writers) ... FAIL
+test_waiter_cap (tests.test_hardening.LeadUnit.test_waiter_cap) ... ERROR
+test_waiter_is_released_by_done (tests.test_hardening.LeadUnit.test_waiter_is_released_by_done) ... ERROR
+test_slow_drip_is_cut_off_at_the_deadline (tests.test_hardening.ProviderDeadline.test_slow_drip_is_cut_off_at_the_deadline) ... FAIL
+test_timeout_maps_to_provider_timeout (tests.test_hardening.ProviderDeadline.test_timeout_maps_to_provider_timeout) ... FAIL
+test_bytes_after_the_jpeg_end_marker_are_fine (tests.test_hardening.TruncatedUploads.test_bytes_after_the_jpeg_end_marker_are_fine) ... ok
+  test_jpeg_cut_anywhere_is_invalid (tests.test_hardening.TruncatedUploads.test_jpeg_cut_anywhere_is_invalid) (frac=0.99) ... FAIL
+  test_jpeg_cut_anywhere_is_invalid (tests.test_hardening.TruncatedUploads.test_jpeg_cut_anywhere_is_invalid) (frac=0.9) ... FAIL
+  test_jpeg_cut_anywhere_is_invalid (tests.test_hardening.TruncatedUploads.test_jpeg_cut_anywhere_is_invalid) (frac=0.5) ... FAIL
+  test_jpeg_cut_anywhere_is_invalid (tests.test_hardening.TruncatedUploads.test_jpeg_cut_anywhere_is_invalid) (frac=0.1) ... FAIL
+test_large_photo_still_passes (tests.test_hardening.TruncatedUploads.test_large_photo_still_passes) ... ok
+test_webp_cut_short_is_invalid (tests.test_hardening.TruncatedUploads.test_webp_cut_short_is_invalid) ... ok
+ERROR: test_waiter_cap (tests.test_hardening.LeadUnit.test_waiter_cap)
+ERROR: test_waiter_is_released_by_done (tests.test_hardening.LeadUnit.test_waiter_is_released_by_done)
+FAIL: test_same_name_from_many_writers (tests.test_hardening.ConcurrentLocalWrites.test_same_name_from_many_writers)
+FAIL: test_overlapping_identical_requests_pay_once (tests.test_hardening.OverlappingDuplicates.test_overlapping_identical_requests_pay_once)
+FAIL: test_slow_drip_is_cut_off_at_the_deadline (tests.test_hardening.ProviderDeadline.test_slow_drip_is_cut_off_at_the_deadline)
+FAIL: test_timeout_maps_to_provider_timeout (tests.test_hardening.ProviderDeadline.test_timeout_maps_to_provider_timeout)
+FAIL: test_jpeg_cut_anywhere_is_invalid (tests.test_hardening.TruncatedUploads.test_jpeg_cut_anywhere_is_invalid) (frac=0.99)
+FAIL: test_jpeg_cut_anywhere_is_invalid (tests.test_hardening.TruncatedUploads.test_jpeg_cut_anywhere_is_invalid) (frac=0.9)
+FAIL: test_jpeg_cut_anywhere_is_invalid (tests.test_hardening.TruncatedUploads.test_jpeg_cut_anywhere_is_invalid) (frac=0.5)
+FAIL: test_jpeg_cut_anywhere_is_invalid (tests.test_hardening.TruncatedUploads.test_jpeg_cut_anywhere_is_invalid) (frac=0.1)
+Ran 11 tests in 13.870s
+FAILED (failures=8, errors=2)

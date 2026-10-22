@@ -1,0 +1,96 @@
+{
+  "benchmark": "B2b in-process stage timing",
+  "environment": {
+    "measuredAt": "2026-10-22T17:42:52Z",
+    "host": "ephemeral cloud sandbox (shared, not dedicated hardware)",
+    "os": "Linux-6.18.44-fc-v140-x86_64-with-glibc2.39",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "logicalCpus": 4,
+    "memoryGiB": 15.7,
+    "python": "Python 3.13.16",
+    "gitCommit": "fbbc625",
+    "backendSource": "/home/claude/mosaic/apps/backend"
+  },
+  "rows": [
+    {
+      "n": 50,
+      "median_ms": 1.281,
+      "p95_ms": 1.335,
+      "photo": "0.3MP",
+      "bytes": 122658,
+      "stage": "validate_upload"
+    },
+    {
+      "n": 50,
+      "median_ms": 0.306,
+      "p95_ms": 0.322,
+      "photo": "0.3MP",
+      "bytes": 122658,
+      "stage": "fingerprint_sha256"
+    },
+    {
+      "n": 50,
+      "median_ms": 0.552,
+      "p95_ms": 0.609,
+      "photo": "0.3MP",
+      "bytes": 122658,
+      "stage": "build_request_json"
+    },
+    {
+      "n": 50,
+      "median_ms": 12.567,
+      "p95_ms": 16.106,
+      "photo": "3MP",
+      "bytes": 1243241,
+      "stage": "validate_upload"
+    },
+    {
+      "n": 50,
+      "median_ms": 3.292,
+      "p95_ms": 3.665,
+      "photo": "3MP",
+      "bytes": 1243241,
+      "stage": "fingerprint_sha256"
+    },
+    {
+      "n": 50,
+      "median_ms": 5.865,
+      "p95_ms": 8.308,
+      "photo": "3MP",
+      "bytes": 1243241,
+      "stage": "build_request_json"
+    },
+    {
+      "n": 20,
+      "median_ms": 50.287,
+      "p95_ms": 56.226,
+      "photo": "12MP",
+      "bytes": 4812271,
+      "stage": "validate_upload"
+    },
+    {
+      "n": 20,
+      "median_ms": 13.34,
+      "p95_ms": 17.446,
+      "photo": "12MP",
+      "bytes": 4812271,
+      "stage": "fingerprint_sha256"
+    },
+    {
+      "n": 20,
+      "median_ms": 24.157,
+      "p95_ms": 29.061,
+      "photo": "12MP",
+      "bytes": 4812271,
+      "stage": "build_request_json"
+    },
+    {
+      "n": 500,
+      "median_ms": 0.055,
+      "p95_ms": 0.119,
+      "photo": null,
+      "bytes": null,
+      "stage": "load_recipes (per request)"
+    }
+  ]
+}

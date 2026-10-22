@@ -1,0 +1,10 @@
+# tests/test_hardening.py on this branch
+test_same_name_from_many_writers (tests.test_hardening.ConcurrentLocalWrites.test_same_name_from_many_writers) ... ok
+test_waiter_cap (tests.test_hardening.LeadUnit.test_waiter_cap) ... ok
+test_waiter_is_released_by_done (tests.test_hardening.LeadUnit.test_waiter_is_released_by_done) ... ok
+test_slow_drip_is_cut_off_at_the_deadline (tests.test_hardening.ProviderDeadline.test_slow_drip_is_cut_off_at_the_deadline) ... ok
+test_bytes_after_the_jpeg_end_marker_are_fine (tests.test_hardening.TruncatedUploads.test_bytes_after_the_jpeg_end_marker_are_fine) ... ok
+test_jpeg_cut_anywhere_is_invalid (tests.test_hardening.TruncatedUploads.test_jpeg_cut_anywhere_is_invalid) ... ok
+test_webp_cut_short_is_invalid (tests.test_hardening.TruncatedUploads.test_webp_cut_short_is_invalid) ... ok
+Ran 11 tests in 4.039s
+OK

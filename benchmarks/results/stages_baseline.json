@@ -1,0 +1,96 @@
+{
+  "benchmark": "B2b in-process stage timing",
+  "environment": {
+    "measuredAt": "2026-10-22T17:35:52Z",
+    "host": "ephemeral cloud sandbox (shared, not dedicated hardware)",
+    "os": "Linux-6.18.44-fc-v140-x86_64-with-glibc2.39",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "logicalCpus": 4,
+    "memoryGiB": 15.7,
+    "python": "Python 3.13.16",
+    "gitCommit": "fbbc625",
+    "backendSource": "/tmp/claude-0/-home-claude/34a81406-71ac-5d15-b36c-7fe5db55567a/scratchpad/baseline/apps/backend"
+  },
+  "rows": [
+    {
+      "n": 50,
+      "median_ms": 0.027,
+      "p95_ms": 0.034,
+      "photo": "0.3MP",
+      "bytes": 122658,
+      "stage": "validate_upload"
+    },
+    {
+      "n": 50,
+      "median_ms": 0.332,
+      "p95_ms": 0.447,
+      "photo": "0.3MP",
+      "bytes": 122658,
+      "stage": "fingerprint_sha256"
+    },
+    {
+      "n": 50,
+      "median_ms": 0.63,
+      "p95_ms": 1.109,
+      "photo": "0.3MP",
+      "bytes": 122658,
+      "stage": "build_request_json"
+    },
+    {
+      "n": 50,
+      "median_ms": 0.029,
+      "p95_ms": 0.049,
+      "photo": "3MP",
+      "bytes": 1243241,
+      "stage": "validate_upload"
+    },
+    {
+      "n": 50,
+      "median_ms": 3.63,
+      "p95_ms": 5.544,
+      "photo": "3MP",
+      "bytes": 1243241,
+      "stage": "fingerprint_sha256"
+    },
+    {
+      "n": 50,
+      "median_ms": 6.394,
+      "p95_ms": 9.891,
+      "photo": "3MP",
+      "bytes": 1243241,
+      "stage": "build_request_json"
+    },
+    {
+      "n": 20,
+      "median_ms": 0.028,
+      "p95_ms": 0.045,
+      "photo": "12MP",
+      "bytes": 4812271,
+      "stage": "validate_upload"
+    },
+    {
+      "n": 20,
+      "median_ms": 13.324,
+      "p95_ms": 17.658,
+      "photo": "12MP",
+      "bytes": 4812271,
+      "stage": "fingerprint_sha256"
+    },
+    {
+      "n": 20,
+      "median_ms": 23.197,
+      "p95_ms": 29.308,
+      "photo": "12MP",
+      "bytes": 4812271,
+      "stage": "build_request_json"
+    },
+    {
+      "n": 500,
+      "median_ms": 0.048,
+      "p95_ms": 0.078,
+      "photo": null,
+      "bytes": null,
+      "stage": "load_recipes (per request)"
+    }
+  ]
+}

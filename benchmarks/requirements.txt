@@ -1,0 +1,2 @@
+# Charts only (benchmarks/charts.py). The benchmarks themselves need only requirements-dev.txt + k6.
+matplotlib==3.10.7

@@ -1,0 +1,502 @@
+{
+  "benchmark": "B3 reliability scenarios (SIMULATED provider)",
+  "environment": {
+    "measuredAt": "2026-10-22T17:38:23Z",
+    "host": "ephemeral cloud sandbox (shared, not dedicated hardware)",
+    "os": "Linux-6.18.44-fc-v140-x86_64-with-glibc2.39",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "logicalCpus": 4,
+    "memoryGiB": 15.7,
+    "python": "Python 3.13.16",
+    "gitCommit": "fbbc625",
+    "backendSource": "/home/claude/mosaic/apps/backend"
+  },
+  "provider_failures": [
+    {
+      "status": 200,
+      "wall_s": 0.14,
+      "error": null,
+      "resultId": "da9cc8db55864437a47127f6784b7439",
+      "mode": "live",
+      "fallbackReason": null,
+      "case": "ok",
+      "expected": "live",
+      "provider_calls": 1,
+      "budget": {
+        "attempts": 1,
+        "live": 1
+      }
+    },
+    {
+      "status": 200,
+      "wall_s": 0.11,
+      "error": null,
+      "resultId": "9022e7855d24431eba7bd7466cc719b2",
+      "mode": "mock",
+      "fallbackReason": "provider_error",
+      "case": "error",
+      "expected": "fallback",
+      "provider_calls": 1,
+      "budget": {
+        "attempts": 1,
+        "failed": 1
+      }
+    },
+    {
+      "status": 200,
+      "wall_s": 2.08,
+      "error": null,
+      "resultId": "4ca809e098c04250a68c0bc78b1a999d",
+      "mode": "mock",
+      "fallbackReason": "provider_timeout",
+      "case": "hang",
+      "expected": "fallback within ~2 s",
+      "provider_calls": 1,
+      "budget": {
+        "attempts": 1,
+        "failed": 1
+      }
+    },
+    {
+      "status": 200,
+      "wall_s": 0.11,
+      "error": null,
+      "resultId": "0ab6c1ee33884c76bec718dd6c4d525d",
+      "mode": "mock",
+      "fallbackReason": "provider_no_image",
+      "case": "text",
+      "expected": "fallback",
+      "provider_calls": 1,
+      "budget": {
+        "attempts": 1,
+        "failed": 1
+      }
+    },
+    {
+      "status": 200,
+      "wall_s": 0.1,
+      "error": null,
+      "resultId": "4094af09fd20430691cd82f610c9967a",
+      "mode": "mock",
+      "fallbackReason": "provider_no_image",
+      "case": "badjson",
+      "expected": "fallback",
+      "provider_calls": 1,
+      "budget": {
+        "attempts": 1,
+        "failed": 1
+      }
+    },
+    {
+      "status": 200,
+      "wall_s": 2.07,
+      "error": null,
+      "resultId": "8fe928977adb4e67bbc8206a62a6dbe6",
+      "mode": "mock",
+      "fallbackReason": "provider_timeout",
+      "case": "drip",
+      "expected": "fallback within ~2 s",
+      "provider_calls": 1,
+      "budget": {
+        "attempts": 1,
+        "failed": 1
+      }
+    },
+    {
+      "status": 200,
+      "wall_s": 0.09,
+      "error": null,
+      "resultId": "3b35b411a31f43638f71694bf325b802",
+      "mode": "mock",
+      "fallbackReason": "provider_error",
+      "case": "refused",
+      "expected": "fallback",
+      "provider_calls": 0,
+      "budget": {
+        "attempts": 1,
+        "failed": 1
+      }
+    }
+  ],
+  "duplicates": [
+    {
+      "case": "simultaneous",
+      "provider_calls": 1,
+      "same_result": true,
+      "first": {
+        "status": 200,
+        "wall_s": 3.16,
+        "error": null,
+        "resultId": "10f3c5b249004ccdb379d26d941011d5",
+        "mode": "live",
+        "fallbackReason": null
+      },
+      "second": {
+        "status": 200,
+        "wall_s": 3.16,
+        "error": null,
+        "resultId": "10f3c5b249004ccdb379d26d941011d5",
+        "mode": "live",
+        "fallbackReason": null
+      },
+      "budget": {
+        "attempts": 1,
+        "live": 1
+      }
+    },
+    {
+      "case": "1s apart (refresh + retry)",
+      "provider_calls": 1,
+      "same_result": true,
+      "first": {
+        "status": 200,
+        "wall_s": 3.11,
+        "error": null,
+        "resultId": "081e5ca74b464b5987be0accbe0a2412",
+        "mode": "live",
+        "fallbackReason": null
+      },
+      "second": {
+        "status": 200,
+        "wall_s": 2.11,
+        "error": null,
+        "resultId": "081e5ca74b464b5987be0accbe0a2412",
+        "mode": "live",
+        "fallbackReason": null
+      },
+      "budget": {
+        "attempts": 1,
+        "live": 1
+      }
+    },
+    {
+      "case": "after first finished",
+      "provider_calls": 1,
+      "same_result": true,
+      "first": {
+        "status": 200,
+        "wall_s": 3.13,
+        "error": null,
+        "resultId": "2ff5431d1f034aed8fd65696583de325",
+        "mode": "live",
+        "fallbackReason": null
+      },
+      "second": {
+        "status": 200,
+        "wall_s": 0.05,
+        "error": null,
+        "resultId": "2ff5431d1f034aed8fd65696583de325",
+        "mode": "live",
+        "fallbackReason": null
+      },
+      "budget": {
+        "attempts": 1,
+        "live": 1
+      }
+    }
+  ],
+  "rate_limits": {
+    "case": "6 requests, 6 different forged X-Forwarded-For, default 3/min",
+    "statuses": [
+      200,
+      200,
+      200,
+      429,
+      429,
+      429
+    ]
+  },
+  "daily_budget": {
+    "case": "MOSAIC_DAILY_GLOBAL=5, 8 sequential distinct requests",
+    "statuses": [
+      200,
+      200,
+      200,
+      200,
+      200,
+      503,
+      503,
+      503
+    ],
+    "errors": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "daily_budget_reached",
+      "daily_budget_reached",
+      "daily_budget_reached"
+    ],
+    "provider_calls": 5,
+    "budget": {
+      "attempts": 5,
+      "live": 5
+    }
+  },
+  "budget_race": [
+    {
+      "workers": 1,
+      "trial": 1,
+      "limit": 50,
+      "max_concurrent_per_worker": 2,
+      "requests": 300,
+      "provider_calls": 50,
+      "served_200": 50,
+      "statuses": {
+        "200": 50,
+        "503:server_busy": 28,
+        "503:daily_budget_reached": 222
+      },
+      "server_tracebacks": 0,
+      "last_exception": null,
+      "budget_file": {
+        "attempts": 50,
+        "live": 50
+      }
+    },
+    {
+      "workers": 1,
+      "trial": 2,
+      "limit": 50,
+      "max_concurrent_per_worker": 2,
+      "requests": 300,
+      "provider_calls": 50,
+      "served_200": 50,
+      "statuses": {
+        "503:server_busy": 47,
+        "200": 50,
+        "503:daily_budget_reached": 203
+      },
+      "server_tracebacks": 0,
+      "last_exception": null,
+      "budget_file": {
+        "attempts": 50,
+        "live": 50
+      }
+    },
+    {
+      "workers": 1,
+      "trial": 3,
+      "limit": 50,
+      "max_concurrent_per_worker": 2,
+      "requests": 300,
+      "provider_calls": 50,
+      "served_200": 50,
+      "statuses": {
+        "200": 50,
+        "503:server_busy": 48,
+        "503:daily_budget_reached": 202
+      },
+      "server_tracebacks": 0,
+      "last_exception": null,
+      "budget_file": {
+        "attempts": 50,
+        "live": 50
+      }
+    },
+    {
+      "workers": 1,
+      "trial": 4,
+      "limit": 50,
+      "max_concurrent_per_worker": 2,
+      "requests": 300,
+      "provider_calls": 50,
+      "served_200": 50,
+      "statuses": {
+        "200": 50,
+        "503:server_busy": 63,
+        "503:daily_budget_reached": 187
+      },
+      "server_tracebacks": 0,
+      "last_exception": null,
+      "budget_file": {
+        "attempts": 50,
+        "live": 50
+      }
+    },
+    {
+      "workers": 1,
+      "trial": 5,
+      "limit": 50,
+      "max_concurrent_per_worker": 2,
+      "requests": 300,
+      "provider_calls": 50,
+      "served_200": 50,
+      "statuses": {
+        "503:server_busy": 44,
+        "200": 50,
+        "503:daily_budget_reached": 206
+      },
+      "server_tracebacks": 0,
+      "last_exception": null,
+      "budget_file": {
+        "attempts": 50,
+        "live": 50
+      }
+    },
+    {
+      "workers": 4,
+      "trial": 1,
+      "limit": 50,
+      "max_concurrent_per_worker": 2,
+      "requests": 300,
+      "provider_calls": 51,
+      "served_200": 51,
+      "statuses": {
+        "503:server_busy": 13,
+        "200": 51,
+        "503:daily_budget_reached": 236
+      },
+      "server_tracebacks": 0,
+      "last_exception": null,
+      "budget_file": {
+        "attempts": 50,
+        "live": 51
+      }
+    },
+    {
+      "workers": 4,
+      "trial": 2,
+      "limit": 50,
+      "max_concurrent_per_worker": 2,
+      "requests": 300,
+      "provider_calls": 53,
+      "served_200": 53,
+      "statuses": {
+        "200": 53,
+        "503:server_busy": 13,
+        "503:daily_budget_reached": 234
+      },
+      "server_tracebacks": 0,
+      "last_exception": null,
+      "budget_file": {
+        "attempts": 50,
+        "live": 53
+      }
+    },
+    {
+      "workers": 4,
+      "trial": 3,
+      "limit": 50,
+      "max_concurrent_per_worker": 2,
+      "requests": 300,
+      "provider_calls": 53,
+      "served_200": 53,
+      "statuses": {
+        "503:server_busy": 13,
+        "200": 53,
+        "503:daily_budget_reached": 234
+      },
+      "server_tracebacks": 0,
+      "last_exception": null,
+      "budget_file": {
+        "attempts": 50,
+        "live": 52
+      }
+    },
+    {
+      "workers": 4,
+      "trial": 4,
+      "limit": 50,
+      "max_concurrent_per_worker": 2,
+      "requests": 300,
+      "provider_calls": 53,
+      "served_200": 53,
+      "statuses": {
+        "200": 53,
+        "503:server_busy": 12,
+        "503:daily_budget_reached": 235
+      },
+      "server_tracebacks": 0,
+      "last_exception": null,
+      "budget_file": {
+        "attempts": 50,
+        "live": 49
+      }
+    },
+    {
+      "workers": 4,
+      "trial": 5,
+      "limit": 50,
+      "max_concurrent_per_worker": 2,
+      "requests": 300,
+      "provider_calls": 52,
+      "served_200": 52,
+      "statuses": {
+        "200": 52,
+        "503:server_busy": 10,
+        "503:daily_budget_reached": 238
+      },
+      "server_tracebacks": 0,
+      "last_exception": null,
+      "budget_file": {
+        "attempts": 50,
+        "live": 51
+      }
+    }
+  ],
+  "body_limits": {
+    "declared_9MB": [
+      413,
+      "{\"error\":\"too_large\"}"
+    ],
+    "chunked_9MB": [
+      400,
+      "{\"detail\":\"There was an error parsing th"
+    ],
+    "health_after": 200
+  },
+  "corrupt_uploads": [
+    {
+      "case": "jpeg truncated to 99%",
+      "status": 400,
+      "error": "invalid_image",
+      "reached_provider": false
+    },
+    {
+      "case": "jpeg truncated to 90%",
+      "status": 400,
+      "error": "invalid_image",
+      "reached_provider": false
+    },
+    {
+      "case": "jpeg truncated to 50%",
+      "status": 400,
+      "error": "invalid_image",
+      "reached_provider": false
+    },
+    {
+      "case": "jpeg truncated to 10%",
+      "status": 400,
+      "error": "invalid_image",
+      "reached_provider": false
+    },
+    {
+      "case": "jpeg truncated to 1%",
+      "status": 400,
+      "error": "invalid_image",
+      "reached_provider": false
+    },
+    {
+      "case": "jpeg 20KB zeroed mid-file",
+      "status": 200,
+      "error": null,
+      "reached_provider": true
+    },
+    {
+      "case": "valid jpeg (control)",
+      "status": 200,
+      "error": null,
+      "reached_provider": true
+    }
+  ],
+  "restart_recovery": {
+    "restart_to_healthy_s": {
+      "sigterm": 0.53,
+      "sigkill": 0.42
+    },
+    "result_after_sigterm": 200,
+    "result_after_sigkill": 200
+  }
+}
