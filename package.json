@@ -12,9 +12,12 @@
     "start": "pnpm --filter @mosaic/web start",
     "typecheck": "pnpm --filter @mosaic/web typecheck",
     "test": "node --test --test-isolation=none tests/*.test.mjs",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:e2e": "node --test --test-concurrency=1 tests/e2e/*.test.mjs",
+    "test:all": "bash scripts/test-all.sh"
   },
   "devDependencies": {
-    "prettier": "3.8.1"
+    "prettier": "3.8.1",
+    "playwright-core": "1.56.1"
   }
 }

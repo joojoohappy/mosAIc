@@ -12,10 +12,13 @@ const recipe = {
   id: "seed-01",
   title: "Recipe",
   summary: "Summary",
+  category: "Poster",
+  tags: ["Geometric"],
   sourcePostUrl: "https://example.com/post",
   creatorName: null,
   creatorInstagramUrl: null,
   previewImageUrl: null,
+  previewBeforeUrl: null,
   inputNote: "One photo",
   aspectRatio: "3:4",
   promptVisibility: "public",
@@ -192,4 +195,34 @@ test("upload accepts <=8 MiB JPEG/PNG/WebP, rejects larger/empty/wrong formats",
   );
   assert.equal(validateImage(null), "missing_image");
   assert.equal(validateImage({ size: 0, type: "image/png" }), "missing_image");
+});
+test("liveGeneration reads the health flag and degrades to null", async () => {
+  const withFlag = (body, status = 200) =>
+    createMosaicClient({ fetch: async () => json(body, status) });
+  assert.equal(
+    await withFlag({ ok: true, liveGeneration: true }).liveGeneration(),
+    true,
+  );
+  assert.equal(
+    await withFlag({ ok: true, liveGeneration: false }).liveGeneration(),
+    false,
+  );
+  assert.equal(await withFlag({ ok: true }).liveGeneration(), null);
+  assert.equal(await withFlag({ ok: false }, 503).liveGeneration(), null);
+  const down = createMosaicClient({
+    fetch: async () => {
+      throw new TypeError("fetch failed");
+    },
+  });
+  assert.equal(await down.liveGeneration(), null);
+});
+test("a host's 413 (non-JSON body) is reported as too_large, not a bad response", async () => {
+  const api = createMosaicClient({
+    fetch: async () =>
+      new Response("Request Entity Too Large", { status: 413 }),
+  });
+  await assert.rejects(
+    api.generate("seed-01", new File(["x"], "p.png", { type: "image/png" })),
+    { code: "too_large" },
+  );
 });

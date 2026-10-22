@@ -30,7 +30,8 @@ if [ -z "${BASE:-}" ]; then
   until curl -sf "$BASE/api/health" >/dev/null 2>&1; do sleep 0.2; done
 fi
 
-printf '\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01' > "$TMP/ok.jpg"; head -c 512 /dev/urandom >> "$TMP/ok.jpg"
+./.venv/bin/python -c "from PIL import Image; Image.new('RGB', (64, 48), (200, 90, 30)).save('$TMP/ok.jpg', 'JPEG')"
+{ printf '\xff\xd8\xff\xe0\x00\x10JFIF'; head -c 64 /dev/urandom; } > "$TMP/broken.jpg"
 echo "definitely not an image" > "$TMP/fake.jpg"
 { printf '\x89PNG\r\n\x1a\n'; head -c 9000000 /dev/urandom; } > "$TMP/big.png"
 
@@ -50,6 +51,7 @@ present() { # name needle url  -- fails unless the needle appears in the body
 
 echo "smoke: $BASE"
 check  "health"                 200 "$BASE/api/health"
+present "health reports mode"   '"liveGeneration":false' "$BASE/api/health"
 check  "list recipes"           200 "$BASE/api/recipes"
 check  "read recipe"            200 "$BASE/api/recipes/seed-01"
 check  "read unknown recipe"    404 "$BASE/api/recipes/seed-99"
@@ -59,7 +61,8 @@ check  "unknown recipe"         404 -F recipeId=seed-99 -F image=@"$TMP/ok.jpg" 
 check  "unverified recipe"      403 -F recipeId=seed-01 -F image=@"$TMP/ok.jpg"    "$BASE/api/generate"
 check  "missing image"          400 -F recipeId=seed-02                            "$BASE/api/generate"
 check  "text renamed .jpg"      400 -F recipeId=seed-02 -F image=@"$TMP/fake.jpg"  "$BASE/api/generate"
-check  "oversize upload"        400 -F recipeId=seed-02 -F image=@"$TMP/big.png"   "$BASE/api/generate"
+check  "broken jpeg"            400 -F recipeId=seed-02 -F image=@"$TMP/broken.jpg" "$BASE/api/generate"
+check  "oversize upload"        413 -F recipeId=seed-02 -F image=@"$TMP/big.png"   "$BASE/api/generate"
 check  "bad result id"          404 "$BASE/api/results/nope"
 check  "path traversal"         404 "$BASE/api/results/..%2F..%2Fetc%2Fpasswd"
 check  "unknown result id"      404 "$BASE/api/results/00000000000000000000000000000000"

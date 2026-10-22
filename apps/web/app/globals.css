@@ -988,3 +988,20 @@ img {
     font-size: 17px;
   }
 }
+.mode-notice {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #fcd34d;
+  border-radius: var(--mosaic-radius);
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.next-row {
+  display: flex;
+  gap: 12px;
+}
+.next-row .button {
+  flex: 1;
+}

@@ -190,27 +190,13 @@ export function Tags({ tags }: { tags: string[] }) {
     </div>
   );
 }
-export const categories = [
-  "All",
-  "Geometric",
-  "Editorial",
-  "Paper Cut",
-  "Photography",
-  "Abstract",
-  "Illustration",
-];
-// The public contract has no category field. These local facets only match words
-// explicitly present in a recipe's title/summary; they do not alter API records.
+/** Category first, then style tags, without duplicates. */
 export function recipeTags(recipe: PublicRecipe): string[] {
-  const text = recipe.title + " " + recipe.summary;
   return [
-    ["Geometric", /geometric|幾何/i],
-    ["Editorial", /editorial|編輯/i],
-    ["Paper Cut", /paper.?cut|紙雕/i],
-    ["Photography", /photo|照片/i],
-    ["Abstract", /abstract|抽象/i],
-    ["Illustration", /portrait|插畫|彩鉛/i],
-  ]
-    .filter(([, pattern]) => (pattern as RegExp).test(text))
-    .map(([name]) => name as string);
+    ...new Set([recipe.category, ...recipe.tags].filter(Boolean)),
+  ] as string[];
+}
+/** Filter chips: "All" plus every tag that at least one recipe has. */
+export function filterOptions(recipes: PublicRecipe[]): string[] {
+  return ["All", ...new Set(recipes.flatMap(recipeTags))];
 }

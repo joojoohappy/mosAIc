@@ -8,6 +8,7 @@ Configure in apps/backend/.env (see .env.example):
     GEMINI_API_KEY           required for live generation
     MOSAIC_IMAGE_MODEL       optional, defaults to DEFAULT_MODEL
     MOSAIC_PROVIDER_TIMEOUT  optional seconds, defaults to 60
+    MOSAIC_PROVIDER_ENDPOINT optional; only for tests against a local fake
 
 Contract with generation.py: return image bytes or raise. Never touch the
 filesystem, never retry. The caller validates the bytes and decides the mode.
@@ -75,7 +76,7 @@ def generate(api_key: str, prompt: str, image: bytes, image_kind: str,
              aspect_ratio: str | None) -> bytes:
     body = json.dumps(build_request(prompt, image, image_kind, aspect_ratio))
     req = urllib.request.Request(
-        ENDPOINT,
+        os.environ.get("MOSAIC_PROVIDER_ENDPOINT") or ENDPOINT,
         data=body.encode("utf-8"),
         headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
         method="POST",

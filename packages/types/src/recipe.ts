@@ -9,12 +9,18 @@ export type PublicRecipe = {
   id: string;
   title: string;
   summary: string;
+  /** Main category shown on cards, e.g. "Poster". */
+  category: string | null;
+  /** Style tags used for filtering, e.g. ["Geometric", "Editorial"]. */
+  tags: string[];
   sourcePostUrl: string;
   /** null until someone verifies the Threads post. Render "來源待確認", never a guess. */
   creatorName: string | null;
   creatorInstagramUrl: string | null;
   /** null until a preview image is cleared for display. Currently null for all seeds. */
   previewImageUrl: string | null;
+  /** The input photo behind the creator's preview ("before"), when shared. */
+  previewBeforeUrl: string | null;
   inputNote: string;
   /** Output aspect ratio the prompt asks for, e.g. "3:4". */
   aspectRatio: string | null;

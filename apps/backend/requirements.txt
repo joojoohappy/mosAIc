@@ -2,3 +2,6 @@ fastapi
 uvicorn[standard]
 python-multipart
 python-dotenv
+Pillow
+# Vercel Blob result storage; only imported when a Blob store is connected.
+vercel-blob>=0.5.0

@@ -78,6 +78,23 @@ class RecipeLookup(Base):
             self.assertTrue(r["prompt"].strip(), f"{r['id']} has no prompt")
             self.assertTrue(r["sourcePostUrl"].startswith("https://"))
 
+    def test_recipe_data_is_well_formed(self):
+        recipes = recipe_mod.load_recipes()
+        self.assertEqual(len({r["id"] for r in recipes}), len(recipes), "duplicate ids")
+        for r in recipes:
+            with self.subTest(recipe=r["id"]):
+                self.assertRegex(r["id"], r"^[a-z0-9-]+$")
+                for field in ("title", "summary", "category", "inputNote", "prompt"):
+                    self.assertTrue(isinstance(r[field], str) and r[field].strip(), field)
+                self.assertTrue(r["tags"] and all(isinstance(t, str) for t in r["tags"]))
+                self.assertIn(r["promptVisibility"], ("public", "hidden"))
+                self.assertRegex(r["aspectRatio"], r"^\d+:\d+$")
+                self.assertIsInstance(r["tryReady"], bool)
+                for url in (r["creatorInstagramUrl"],):
+                    self.assertTrue(url is None or url.startswith("https://"))
+                for preview in (r["previewImageUrl"], r["previewBeforeUrl"]):
+                    self.assertTrue(preview is None or preview.startswith("/static/seed/"))
+
     def test_unknown_recipe_returns_none(self):
         self.assertIsNone(recipe_mod.get_recipe("seed-99"))
         self.assertIsNone(recipe_mod.get_recipe(""))
@@ -218,7 +235,7 @@ class Modes(Base):
         with mock.patch.multiple(generate, API_KEY="k", _call_provider=boom):
             r = generate.run_generation(self.recipe, JPEG)
         self.assertEqual(r["mode"], "cached")
-        self.assertIn("TimeoutError", r["fallbackReason"])
+        self.assertEqual(r["fallbackReason"], "provider_timeout")
 
     def test_provider_returning_text_is_not_live(self):
         # A 200 carrying a refusal message is a failure, not an image.
@@ -227,7 +244,7 @@ class Modes(Base):
                                  _call_provider=mock.Mock(return_value=b'{"refused":1}')):
             r = generate.run_generation(self.recipe, JPEG)
         self.assertEqual(r["mode"], "cached")
-        self.assertIn("not an image", r["fallbackReason"])
+        self.assertEqual(r["fallbackReason"], "provider_no_image")
 
     def test_provider_is_given_the_stored_recipe_not_the_caller_input(self):
         spy = mock.Mock(return_value=PNG)

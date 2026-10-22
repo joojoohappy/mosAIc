@@ -4,7 +4,7 @@ import { useState } from "react";
 import { mosaicApi } from "@mosaic/api";
 import { useApiData, useFavorites } from "../hooks";
 import {
-  categories,
+  filterOptions,
   DataState,
   Placeholder,
   recipeTags,
@@ -41,7 +41,7 @@ export function Discover({ savedOnly = false }: { savedOnly?: boolean }) {
         <section className="categories">
           <h2>Categories</h2>
           <div className="chips">
-            {categories.map((c) => (
+            {filterOptions(data || []).map((c) => (
               <button
                 key={c}
                 className="chip"

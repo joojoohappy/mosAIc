@@ -106,6 +106,20 @@ export function Result({ id }: { id: string }) {
                   <p>{r.sourceNote}</p>
                 </section>
                 <div className="next-steps">
+                  <div className="next-row">
+                    <Link
+                      href={`/create/${encodeURIComponent(r.recipeId)}`}
+                      className="button wide"
+                    >
+                      再試一次
+                    </Link>
+                    <Link
+                      href={`/recipe/${encodeURIComponent(r.recipeId)}`}
+                      className="button wide"
+                    >
+                      返回 Recipe
+                    </Link>
+                  </div>
                   <p>Want to try another idea?</p>
                   <Link href="/" className="button primary wide">
                     EXPLORE MORE RECIPES

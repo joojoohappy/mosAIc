@@ -24,7 +24,9 @@ Three invariants. Break any one and "the server does not lie" is gone:
 
 from __future__ import annotations
 
+import io
 import json
+import logging
 import os
 import re
 import uuid
@@ -34,6 +36,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from . import provider
+from .limits import DailyBudget
+from .storage import results_store
 
 # Paths resolve from this file, never from cwd -- uvicorn and pytest run from
 # different directories.
@@ -43,6 +47,7 @@ FALLBACK_DIR = STORAGE / "fallback"
 RESULTS_DIR = STORAGE / "results"
 
 MAX_BYTES = 8 * 1024 * 1024
+MAX_PIXELS = 40_000_000  # decompression-bomb guard: ~ 8000 x 5000
 RESULT_ID_RE = re.compile(r"^[0-9a-f]{32}$")
 SIDECAR_REQUIRED = ("image", "provider", "model", "generatedAt", "inputPhoto")
 
@@ -51,6 +56,7 @@ SIDECAR_REQUIRED = ("image", "provider", "model", "generatedAt", "inputPhoto")
 # rather than in main.py so pregen.py gets it too.
 load_dotenv(ROOT / ".env")
 API_KEY = os.environ.get("GEMINI_API_KEY")
+log = logging.getLogger("mosaic.generation")
 
 
 def _now() -> str:
@@ -71,6 +77,53 @@ def _is_image(b: bytes) -> str | None:
         return "webp"
     return None
 
+
+
+def validate_upload(data: bytes) -> str | None:
+    """None if `data` is a real JPEG/PNG/WebP photo, else an API error code.
+
+    Magic bytes first (cheap, and the client's Content-Type is not trusted),
+    then a real decode so a renamed or truncated file is caught here rather
+    than by the paid model call.
+    """
+    kind = _is_image(data)
+    if kind is None:
+        return "unsupported_type"
+    try:
+        from PIL import Image  # Pillow
+
+        with Image.open(io.BytesIO(data)) as img:
+            if img.width * img.height > MAX_PIXELS:
+                return "invalid_image"
+            img.verify()
+    except Exception:  # noqa: BLE001 - any decode failure means "not a usable photo"
+        return "invalid_image"
+    return None
+
+
+class QuotaExceeded(Exception):
+    """Today's global budget of paid model calls is used up."""
+
+
+def _meta_store():
+    return results_store(STORAGE / "meta", kind="meta")
+
+
+budget = DailyBudget(_meta_store)
+
+
+def _reason_code(err: Exception) -> str:
+    """Public, non-sensitive summary of a provider failure. Details go to the log."""
+    import socket
+    import urllib.error
+
+    if isinstance(err, (TimeoutError, socket.timeout)) or (
+        isinstance(err, urllib.error.URLError) and isinstance(err.reason, (TimeoutError, socket.timeout))
+    ):
+        return "provider_timeout"
+    if isinstance(err, ValueError):
+        return "provider_no_image"
+    return "provider_error"
 
 
 def _read_sidecar(recipe_id: str) -> dict | None:
@@ -132,17 +185,17 @@ def _source_note(mode: str, meta: dict | None) -> str:
 
 def _write_result(recipe: dict, img: bytes | None, mode: str, meta: dict | None,
                   reason: str | None) -> dict:
-    """The only place anything is written. Image first, then JSON via tmp+replace,
-    because the frontend GETs the result the instant it has the ID and must never
-    read half a JSON or a URL pointing at a file that isn't there yet."""
+    """The only place anything is written. Image first, then JSON, because the
+    frontend GETs the result the instant it has the ID and must never read a URL
+    pointing at an image that isn't stored yet."""
     result_id = uuid.uuid4().hex
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    store = results_store(RESULTS_DIR)
 
     image_url = None
     if img is not None:
-        ext = _is_image(img) or "png"
-        (RESULTS_DIR / f"{result_id}.{ext}").write_bytes(img)
-        image_url = f"/static/results/{result_id}.{ext}"
+        name = f"{result_id}.{_is_image(img) or 'png'}"
+        store.put(name, img)
+        image_url = f"/static/results/{name}"
 
     result = {
         "resultId": result_id,
@@ -157,44 +210,59 @@ def _write_result(recipe: dict, img: bytes | None, mode: str, meta: dict | None,
         "creatorInstagramUrl": recipe["creatorInstagramUrl"],
         "createdAt": _now(),
     }
-
-    final = RESULTS_DIR / f"{result_id}.json"
-    tmp = final.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
-    os.replace(tmp, final)
+    store.put(f"{result_id}.json", json.dumps(result, ensure_ascii=False).encode("utf-8"))
     return result
 
 
 def run_generation(recipe: dict, image_bytes: bytes) -> dict:
-    """recipe + user photo -> a labelled result. Never raises for provider failure."""
+    """recipe + user photo -> a labelled result.
+
+    Never raises for provider failure (it falls back to cached/mock). Raises
+    QuotaExceeded, before any paid call, when today's budget is used up.
+    """
     img: bytes | None = None
     mode, reason, meta = "mock", None, None
 
     if API_KEY:
+        if not budget.reserve():
+            raise QuotaExceeded
         try:
             img = _call_provider(recipe, image_bytes)
             if _is_image(img) is None:
                 raise ValueError("provider returned bytes that are not an image")
             mode = "live"
+            budget.record("live")
         except Exception as err:  # noqa: BLE001 - every provider failure falls back
-            img, reason = None, f"{type(err).__name__}: {err}"[:200]
+            img, reason = None, _reason_code(err)
+            budget.record("failed")
+            log.warning("provider failed recipe=%s reason=%s detail=%s",
+                        recipe["id"], reason, f"{type(err).__name__}: {err}"[:300])
     else:
         reason = "no_api_key"
 
     if img is None:
         img, mode, meta = _load_fallback(recipe["id"])
-        print(f"[generate] {recipe['id']} -> {mode} ({reason})")
 
     return _write_result(recipe, img, mode, meta, reason)
 
 
 def load_result(result_id: str) -> dict | None:
-    # Validate before the id ever reaches a path join -- "../../etc/passwd" is a 404,
-    # not a file read.
+    # Validate before the id ever reaches a path or blob name -- "../../etc/passwd"
+    # is a 404, not a file read.
     if not RESULT_ID_RE.match(result_id):
         return None
-    path = RESULTS_DIR / f"{result_id}.json"
+    raw = results_store(RESULTS_DIR).get(f"{result_id}.json")
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        return json.loads(raw) if raw is not None else None
+    except ValueError:
         return None
+
+
+RESULT_FILE_RE = re.compile(r"^[0-9a-f]{32}\.(png|jpg|webp)$")
+
+
+def load_result_image(name: str) -> bytes | None:
+    """Bytes of a stored result image, or None. Only result image names pass."""
+    if not RESULT_FILE_RE.match(name):
+        return None
+    return results_store(RESULTS_DIR).get(name)

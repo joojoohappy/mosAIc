@@ -15,8 +15,8 @@ RECIPES_FILE = Path(__file__).resolve().parent.parent / "data" / "recipes.json"
 # An ALLOWLIST, not a "drop the private bits" denylist: a field added to
 # recipes.json later stays private by default instead of leaking on the next deploy.
 PUBLIC_FIELDS = (
-    "id", "title", "summary", "sourcePostUrl", "creatorName",
-    "creatorInstagramUrl", "previewImageUrl", "inputNote", "aspectRatio",
+    "id", "title", "summary", "category", "tags", "sourcePostUrl", "creatorName",
+    "creatorInstagramUrl", "previewBeforeUrl", "previewImageUrl", "inputNote", "aspectRatio",
     "promptVisibility", "tryReady",
 )
 
@@ -38,6 +38,8 @@ def public_recipe(recipe: dict) -> dict:
     generation looks it up by recipeId, so showing it is read-only.
     """
     projection = {k: recipe.get(k) for k in PUBLIC_FIELDS}
+    tags = recipe.get("tags")
+    projection["tags"] = [t for t in tags if isinstance(t, str)] if isinstance(tags, list) else []
     public = recipe.get("promptVisibility") == "public"
     projection["promptVisibility"] = "public" if public else "hidden"
     projection["prompt"] = recipe.get("prompt") if public else None

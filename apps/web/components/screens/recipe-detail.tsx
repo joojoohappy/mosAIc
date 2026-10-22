@@ -61,31 +61,42 @@ export function RecipeDetail({ id }: { id: string }) {
           r && (
             <div className="detail-layout">
               <aside className="left-col">
-                <Panel title="BEFORE → AFTER" className="comparison">
-                  <div className="comparison-row">
-                    <Placeholder
-                      label="Original"
-                      className="comparison-image"
-                    />
-                    <span className="comparison-arrow">
-                      <Icon name="f530f" size={10} />
-                    </span>
-                    {r.previewImageUrl ? (
+                {r.previewImageUrl ? (
+                  <Panel
+                    title={r.previewBeforeUrl ? "BEFORE → AFTER" : "EXAMPLE"}
+                    className="comparison"
+                  >
+                    <div className="comparison-row">
+                      {r.previewBeforeUrl && (
+                        <>
+                          <div className="comparison-image placeholder">
+                            <img
+                              className="preview-content"
+                              src={r.previewBeforeUrl}
+                              alt="創作者使用的原始照片"
+                            />
+                          </div>
+                          <span className="comparison-arrow">
+                            <Icon name="f530f" size={10} />
+                          </span>
+                        </>
+                      )}
                       <div className="comparison-image placeholder">
                         <img
                           className="preview-content"
                           src={r.previewImageUrl}
-                          alt="Recipe preview"
+                          alt={`${r.title} 的創作者範例`}
                         />
                       </div>
-                    ) : (
-                      <Placeholder
-                        label="Generated"
-                        className="comparison-image"
-                      />
-                    )}
-                  </div>
-                </Panel>
+                    </div>
+                  </Panel>
+                ) : (
+                  <Panel title="EXAMPLE" className="comparison">
+                    <p className="body-copy">
+                      原作者的範例圖尚未取得授權展示，請到原始貼文查看。
+                    </p>
+                  </Panel>
+                )}
                 <Panel title="CREATOR">
                   <div className="creator-row">
                     <span className="avatar">

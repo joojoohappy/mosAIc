@@ -14,6 +14,11 @@ const apiErrors: ApiError[] = [
   "recipe_not_ready",
   "unknown_recipe",
   "unknown_result",
+  "invalid_image",
+  "rate_limited",
+  "daily_limit_reached",
+  "daily_budget_reached",
+  "server_busy",
 ];
 export class MosaicApiError extends Error {
   readonly code: ClientErrorCode;
@@ -28,11 +33,17 @@ export class MosaicApiError extends Error {
 export const errorMessages: Record<ClientErrorCode, string> = {
   missing_recipe_id: "未取得 recipe 資料，請返回探索頁重新選擇。",
   missing_image: "請先選一張照片",
-  unsupported_type: "只支援 JPEG / PNG / WebP",
+  unsupported_type:
+    "只支援 JPEG / PNG / WebP（iPhone 的 HEIC 照片請先轉成 JPEG）",
   too_large: "照片請小於 8MB",
   recipe_not_ready: "這份 recipe 尚未開放試用",
   unknown_recipe: "找不到這份 recipe",
   unknown_result: "結果不存在或連結已失效",
+  invalid_image: "這張照片無法讀取，請換一張再試。",
+  rate_limited: "操作太頻繁了，請等一分鐘再試。",
+  daily_limit_reached: "你今天的免費生成次數已用完，明天再來試試。",
+  daily_budget_reached: "今天的生成額度已用完，請明天再試。",
+  server_busy: "目前使用的人比較多，請稍後再試。",
   backend_unavailable: "後端未啟動",
   request_timeout: "等待生成逾時，請稍後再試。",
   invalid_response: "後端回傳的資料格式不符，請稍後再試。",
@@ -57,12 +68,16 @@ export function isPublicRecipe(value: unknown): value is PublicRecipe {
       "creatorName",
       "creatorInstagramUrl",
       "previewImageUrl",
+      "previewBeforeUrl",
       "aspectRatio",
       "prompt",
     ].every((k) => nullableString(value[k])) &&
     (value.promptVisibility === "public"
       ? typeof value.prompt === "string"
       : value.promptVisibility === "hidden" && value.prompt === null) &&
+    Array.isArray(value.tags) &&
+    value.tags.every((t) => typeof t === "string") &&
+    nullableString(value.category) &&
     typeof value.tryReady === "boolean"
   );
 }
@@ -129,6 +144,9 @@ export function createMosaicClient(
         throw new MosaicApiError("request_timeout");
       throw new MosaicApiError("request_failed");
     }
+    // Hosting proxies (e.g. Vercel's 4.5MB function limit) answer 413 with
+    // their own non-JSON body before the backend sees the upload.
+    if (response.status === 413) throw new MosaicApiError("too_large", 413);
     if (response.status >= 500 && !(await health()))
       throw new MosaicApiError("backend_unavailable", response.status);
     let payload: unknown;
@@ -146,8 +164,24 @@ export function createMosaicClient(
     }
     return payload;
   }
+  /** null when unknown (backend down or an older backend without the field). */
+  async function liveGeneration(): Promise<boolean | null> {
+    try {
+      const r = await transport(base + "/api/health", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(5_000),
+      });
+      const value: unknown = await r.json();
+      return r.ok && record(value) && typeof value.liveGeneration === "boolean"
+        ? value.liveGeneration
+        : null;
+    } catch {
+      return null;
+    }
+  }
   return {
     health,
+    liveGeneration,
     async listRecipes(): Promise<PublicRecipe[]> {
       const value = await request("/api/recipes");
       if (

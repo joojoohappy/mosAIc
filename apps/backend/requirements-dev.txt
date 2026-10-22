@@ -1,0 +1,3 @@
+-r requirements.txt
+# Test-only: FastAPI TestClient
+httpx

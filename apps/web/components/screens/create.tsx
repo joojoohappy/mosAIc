@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { DragEvent, FormEvent } from "react";
 import { mosaicApi, MosaicApiError, messageFor } from "@mosaic/api";
 import { validateImage } from "@mosaic/core";
+import { fitForUpload } from "../fit-upload";
 import { useApiData } from "../hooks";
 import {
   Attribution,
@@ -28,10 +29,16 @@ export function Create({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [notReady, setNotReady] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [live, setLive] = useState<boolean | null>(null);
   const submitLock = useRef(false);
   const mounted = useRef(true);
   const input = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  useEffect(() => {
+    mosaicApi.liveGeneration().then((value) => {
+      if (mounted.current) setLive(value);
+    });
+  }, []);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -79,7 +86,7 @@ export function Create({ id }: { id: string }) {
     setBusy(true);
     setIssue(null);
     try {
-      const resultId = await mosaicApi.generate(r.id, file);
+      const resultId = await mosaicApi.generate(r.id, await fitForUpload(file));
       if (mounted.current) router.push(`/result/${resultId}`);
     } catch (err) {
       if (mounted.current) {
@@ -190,6 +197,12 @@ export function Create({ id }: { id: string }) {
                     </p>
                     <Attribution {...r} />
                   </Panel>
+                  {available && live === false && (
+                    <p className="mode-notice" role="note">
+                      目前為示範模式：尚未設定 AI
+                      生成服務，結果會是預備範例或示意圖，不會由你這次上傳的照片生成。
+                    </p>
+                  )}
                   <div className="cta-block">
                     <button
                       type="submit"
