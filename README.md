@@ -59,7 +59,7 @@ bash scripts/dev.sh
 Open http://localhost:3000. `scripts/dev.sh` starts the API on port 8000 and the website on port 3000 (use `BACKEND_PORT=8010 bash scripts/dev.sh` if 8000 is busy). On Windows, start the two parts separately:
 
 ```sh
-apps/backend/.venv/Scripts/python -m uvicorn app.main:app --app-dir apps/backend --port 8000
+apps/backend/.venv/Scripts/python -m uvicorn app.main:app --app-dir apps/backend --port 8000 --no-proxy-headers
 pnpm dev
 ```
 

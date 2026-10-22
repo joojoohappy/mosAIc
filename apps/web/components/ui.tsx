@@ -107,7 +107,7 @@ export function Placeholder({
   className?: string;
 }) {
   return (
-    <div className={`placeholder ${className}`}>
+    <div className={`placeholder ${className}`} aria-hidden="true">
       <Icon />
       {label && <span>{label}</span>}
     </div>

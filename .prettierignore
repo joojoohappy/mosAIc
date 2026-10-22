@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.next-quality/
 dist/
 .openai/
 apps/backend/

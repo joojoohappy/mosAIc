@@ -13,4 +13,6 @@ COPY scripts scripts
 
 # .env is NOT copied (see .dockerignore) -- the key comes in via compose env_file
 # at runtime so it never gets baked into the image layer.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --no-proxy-headers: never let X-Forwarded-For rewrite the client address used
+# by the per-visitor limits (see app/limits.py client_id).
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers"]

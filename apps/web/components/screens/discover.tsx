@@ -66,7 +66,6 @@ export function Discover({ savedOnly = false }: { savedOnly?: boolean }) {
                   <Link
                     className="card-link"
                     href={`/recipe/${encodeURIComponent(r.id)}`}
-                    aria-label={r.title}
                   >
                     {r.previewImageUrl ? (
                       <div className="card-image">

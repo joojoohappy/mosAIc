@@ -139,7 +139,13 @@ export function RecipeDetail({ id }: { id: string }) {
                 <Panel title="PROMPT">
                   {r.prompt ? (
                     <>
-                      <pre className="prompt-text">{r.prompt}</pre>
+                      <pre
+                        className="prompt-text"
+                        tabIndex={0}
+                        aria-label="Prompt 全文"
+                      >
+                        {r.prompt}
+                      </pre>
                       <button
                         className="text-button"
                         onClick={() => copy(r.prompt!, "Prompt 已複製")}

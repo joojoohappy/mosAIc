@@ -701,7 +701,7 @@ img {
 .eyebrow {
   font-size: 12px;
   font-weight: 700;
-  color: #3b82f6;
+  color: #2563eb;
   text-transform: uppercase;
   line-height: 16px;
 }
@@ -735,8 +735,8 @@ img {
   display: block;
 }
 .lineage .remix {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: #2563eb;
+  color: #2563eb;
 }
 .lineage > div {
   display: flex;
@@ -1023,6 +1023,8 @@ img {
 }
 .legal a {
   color: var(--mosaic-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .legal-updated {
   color: var(--mosaic-muted);
@@ -1036,4 +1038,6 @@ img {
 }
 .consent a {
   color: var(--mosaic-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }

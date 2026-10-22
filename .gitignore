@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.next-quality/
 dist/
 out/
 *.tsbuildinfo
@@ -10,6 +11,7 @@ out/
 __pycache__/
 .venv/
 apps/backend/storage/results/
+apps/backend/storage/meta/
 apps/backend/storage/fallback/*
 !apps/backend/storage/fallback/.gitkeep
 !apps/backend/storage/fallback/*.json
