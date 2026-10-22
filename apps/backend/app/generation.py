@@ -117,8 +117,9 @@ def _reason_code(err: Exception) -> str:
     import socket
     import urllib.error
 
-    if isinstance(err, (TimeoutError, socket.timeout)) or (
-        isinstance(err, urllib.error.URLError) and isinstance(err.reason, (TimeoutError, socket.timeout))
+    timeouts = (TimeoutError, socket.timeout)
+    if isinstance(err, timeouts) or (
+        isinstance(err, urllib.error.URLError) and isinstance(err.reason, timeouts)
     ):
         return "provider_timeout"
     if isinstance(err, ValueError):
@@ -246,16 +247,38 @@ def run_generation(recipe: dict, image_bytes: bytes) -> dict:
     return _write_result(recipe, img, mode, meta, reason)
 
 
+def retention_days() -> int:
+    try:
+        return max(1, int(os.environ.get("MOSAIC_RESULT_RETENTION_DAYS", 30)))
+    except ValueError:
+        return 30
+
+
+def _expired(result: dict) -> bool:
+    try:
+        created = datetime.strptime(result["createdAt"], "%Y-%m-%dT%H:%M:%SZ")
+    except (KeyError, TypeError, ValueError):
+        return False
+    age = datetime.now(timezone.utc) - created.replace(tzinfo=timezone.utc)
+    return age.days >= retention_days()
+
+
 def load_result(result_id: str) -> dict | None:
-    # Validate before the id ever reaches a path or blob name -- "../../etc/passwd"
-    # is a 404, not a file read.
+    """A stored result, or None if unknown or older than the retention period.
+
+    The id is validated before it ever reaches a path or blob name --
+    "../../etc/passwd" is a 404, not a file read.
+    """
     if not RESULT_ID_RE.match(result_id):
         return None
     raw = results_store(RESULTS_DIR).get(f"{result_id}.json")
     try:
-        return json.loads(raw) if raw is not None else None
+        result = json.loads(raw) if raw is not None else None
     except ValueError:
         return None
+    if not isinstance(result, dict) or _expired(result):
+        return None
+    return result
 
 
 RESULT_FILE_RE = re.compile(r"^[0-9a-f]{32}\.(png|jpg|webp)$")
@@ -263,6 +286,6 @@ RESULT_FILE_RE = re.compile(r"^[0-9a-f]{32}\.(png|jpg|webp)$")
 
 def load_result_image(name: str) -> bytes | None:
     """Bytes of a stored result image, or None. Only result image names pass."""
-    if not RESULT_FILE_RE.match(name):
+    if not RESULT_FILE_RE.match(name) or load_result(name.split(".")[0]) is None:
         return None
     return results_store(RESULTS_DIR).get(name)

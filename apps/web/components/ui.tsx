@@ -56,7 +56,7 @@ export function Shell({
         </nav>
         {!about && (
           <Link
-            href="/"
+            href="/#recipes"
             className="button primary header-cta"
             title="Choose a recipe to create your own interpretation"
           >
@@ -69,6 +69,8 @@ export function Shell({
         <p>© 2026 mosAIc. Creative AI prompt sharing platform.</p>
         <div>
           <Link href="/about">About</Link>
+          <Link href="/privacy">隱私說明</Link>
+          <Link href="/terms">使用條款</Link>
           <a
             href="https://github.com/joojoohappy/mosAIc"
             target="_blank"

@@ -53,7 +53,7 @@ export function Discover({ savedOnly = false }: { savedOnly?: boolean }) {
             ))}
           </div>
         </section>
-        <section className="featured">
+        <section className="featured" id="recipes">
           <h2>{savedOnly ? "My Recipes" : "Featured Community Recipes"}</h2>
           {loading || (savedOnly && !ready) ? (
             <DataState loading />

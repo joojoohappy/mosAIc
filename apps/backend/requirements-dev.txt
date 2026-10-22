@@ -1,3 +1,4 @@
 -r requirements.txt
-# Test-only: FastAPI TestClient
+# Test and lint only
 httpx
+ruff

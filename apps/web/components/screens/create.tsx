@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { DragEvent, FormEvent } from "react";
@@ -201,6 +202,14 @@ export function Create({ id }: { id: string }) {
                     <p className="mode-notice" role="note">
                       目前為示範模式：尚未設定 AI
                       生成服務，結果會是預備範例或示意圖，不會由你這次上傳的照片生成。
+                    </p>
+                  )}
+                  {available && (
+                    <p className="consent">
+                      按下 CREATE，代表你同意把這張照片送到 Google Gemini
+                      生成圖片， 並同意<Link href="/terms">使用條款</Link>與
+                      <Link href="/privacy">隱私說明</Link>。mosAIc
+                      不會保存原始照片。
                     </p>
                   )}
                   <div className="cta-block">

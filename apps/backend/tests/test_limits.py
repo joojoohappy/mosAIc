@@ -71,7 +71,8 @@ class LimiterUnit(unittest.TestCase):
             self.assertEqual(limits.settings()["daily_global"], 50)
 
     def test_client_id_prefers_first_forwarded_hop(self):
-        self.assertEqual(limits.client_id({"x-forwarded-for": "1.2.3.4, 10.0.0.1"}, "9.9.9.9"), "1.2.3.4")
+        forwarded = {"x-forwarded-for": "1.2.3.4, 10.0.0.1"}
+        self.assertEqual(limits.client_id(forwarded, "9.9.9.9"), "1.2.3.4")
         self.assertEqual(limits.client_id({}, "9.9.9.9"), "9.9.9.9")
 
 

@@ -8,7 +8,6 @@ import {
   DataState,
   Icon,
   Panel,
-  Placeholder,
   recipeTags,
   Shell,
   Tags,

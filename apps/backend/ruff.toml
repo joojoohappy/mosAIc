@@ -1,0 +1,8 @@
+# Lint settings for the backend (run: .venv/bin/ruff check .)
+line-length = 100
+extend-exclude = [".venv"]
+
+[lint]
+select = ["E", "F", "W", "B"]
+# FastAPI declares form/file params with File()/Form() defaults by design.
+ignore = ["B008"]

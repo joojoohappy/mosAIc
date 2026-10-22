@@ -14,6 +14,7 @@ import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer as createHttpServer } from "node:http";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
+import { crc32 } from "node:zlib";
 import { join } from "node:path";
 import { chromium } from "playwright-core";
 
@@ -25,6 +26,7 @@ const PNG = Buffer.from(
   "base64",
 );
 const children = [];
+let fakeMode = "ok";
 let tmp,
   fake,
   web,
@@ -68,10 +70,19 @@ before(async () => {
         key: req.headers["x-goog-api-key"],
         body: JSON.parse(body),
       });
-      res.setHeader("Content-Type", "application/json");
-      res.end(
-        JSON.stringify({ output_image: { data: PNG.toString("base64") } }),
-      );
+      const reply = () => {
+        res.setHeader("Content-Type", "application/json");
+        res.end(
+          JSON.stringify({ output_image: { data: PNG.toString("base64") } }),
+        );
+      };
+      // fakeMode lets a test make the "model" fail, hang or be slow.
+      if (fakeMode === "error") {
+        res.statusCode = 500;
+        res.end('{"error":{"message":"upstream exploded"}}');
+      } else if (fakeMode === "hang") setTimeout(reply, 6_000);
+      else if (fakeMode === "slow") setTimeout(reply, 3_000);
+      else reply();
     });
   });
   await new Promise((r) => fake.listen(0, "127.0.0.1", r));
@@ -107,6 +118,11 @@ before(async () => {
         ...process.env,
         GEMINI_API_KEY: "e2e-key",
         MOSAIC_PROVIDER_ENDPOINT: fakeUrl,
+        MOSAIC_PROVIDER_TIMEOUT: "4",
+        // Generous per-visitor limits: these tests are all one "visitor".
+        // The limits themselves are covered by apps/backend/tests/test_limits.py.
+        MOSAIC_RATE_PER_MINUTE: "100",
+        MOSAIC_DAILY_PER_CLIENT: "100",
         BLOB_READ_WRITE_TOKEN: "",
         BLOB_STORE_ID: "",
         VERCEL: "",
@@ -336,5 +352,197 @@ test(
       );
       assert.ok(overflow <= 0, `${path} overflows by ${overflow}px`);
     }
+  },
+);
+
+// Shared helper: open Create for seed-01 and pick a photo.
+async function openCreate(
+  p,
+  file = { name: "me.png", mimeType: "image/png", buffer: PNG },
+) {
+  await p.goto(web + "/create/seed-01");
+  await p.waitForSelector(".upload-area:not([disabled])");
+  await p.setInputFiles("#image-upload", file);
+  await p.getByAltText("你選擇的照片").waitFor();
+}
+
+function uniquePng(seed) {
+  // Same 2x2 image with a different trailing chunk -> a different photo hash.
+  const end = PNG.length - 12; // before IEND
+  const text = Buffer.from(`tEXtk\0${seed}`);
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(text.length - 4);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(text));
+  return Buffer.concat([
+    PNG.subarray(0, end),
+    len,
+    text,
+    crc,
+    PNG.subarray(end),
+  ]);
+}
+
+test(
+  "download, explore more, and a double click pays once",
+  { timeout: 120_000 },
+  async () => {
+    fakeMode = "slow";
+    const p = await page();
+    await openCreate(p, {
+      name: "dbl.png",
+      mimeType: "image/png",
+      buffer: uniquePng("dbl"),
+    });
+    const before = modelCalls.length;
+    const create = p.getByRole("button", { name: "CREATE" });
+    await create.dblclick();
+    await p.getByText("CREATING…").waitFor();
+    assert.ok(await p.getByRole("button", { name: "CREATING…" }).isDisabled());
+    await p.waitForURL(/\/result\//, { timeout: 30_000 });
+    fakeMode = "ok";
+    assert.equal(
+      modelCalls.length - before,
+      1,
+      "one model call for a double click",
+    );
+
+    const [download] = await Promise.all([
+      p.waitForEvent("download"),
+      p.getByRole("button", { name: "Download" }).click(),
+    ]);
+    assert.match(download.suggestedFilename(), /^mosaic-[0-9a-f]{32}\.png$/);
+
+    await p.getByRole("link", { name: "EXPLORE MORE RECIPES" }).click();
+    await p.waitForSelector(".recipe-card");
+    assert.equal(new URL(p.url()).pathname, "/");
+  },
+);
+
+test(
+  "model errors and timeouts end in an honest fallback, not a fake image",
+  { timeout: 120_000 },
+  async () => {
+    for (const mode of ["error", "hang"]) {
+      fakeMode = mode;
+      const p = await page();
+      await openCreate(p, {
+        name: `${mode}.png`,
+        mimeType: "image/png",
+        buffer: uniquePng(mode),
+      });
+      await p.getByRole("button", { name: "CREATE" }).click();
+      await p.waitForURL(/\/result\//, { timeout: 30_000 });
+      await p.waitForSelector(".disclosure");
+      // No cached example exists for seed-01, so the result is the labelled placeholder.
+      assert.equal(await p.locator(".disclosure-live").count(), 0, mode);
+      assert.equal(await p.locator(".result-image img").count(), 0, mode);
+      assert.ok(
+        await p.getByRole("button", { name: "Download" }).isDisabled(),
+        mode,
+      );
+    }
+    fakeMode = "ok";
+  },
+);
+
+test(
+  "refreshing during generation and trying again does not pay twice",
+  { timeout: 120_000 },
+  async () => {
+    fakeMode = "slow";
+    const photo = {
+      name: "refresh.png",
+      mimeType: "image/png",
+      buffer: uniquePng("refresh"),
+    };
+    const p = await page();
+    const before = modelCalls.length;
+    await openCreate(p, photo);
+    await p.getByRole("button", { name: "CREATE" }).click();
+    await p.getByText("CREATING…").waitFor();
+    await p.reload(); // the in-flight request finishes on the server anyway
+    await p.waitForTimeout(3_500);
+    await openCreate(p, photo);
+    await p.getByRole("button", { name: "CREATE" }).click();
+    await p.waitForURL(/\/result\//, { timeout: 30_000 });
+    fakeMode = "ok";
+    assert.equal(modelCalls.length - before, 1);
+  },
+);
+
+test(
+  "limits, oversized and invalid files show clear messages",
+  { timeout: 120_000 },
+  async () => {
+    const p = await page();
+    // Over 8MB is refused in the browser before upload.
+    await p.goto(web + "/create/seed-01");
+    await p.waitForSelector(".upload-area:not([disabled])");
+    await p.setInputFiles("#image-upload", {
+      name: "huge.png",
+      mimeType: "image/png",
+      buffer: Buffer.alloc(8 * 1024 * 1024 + 1),
+    });
+    await p.getByText("照片請小於 8MB").waitFor();
+
+    // A file that claims to be a PNG but is not one is refused by the server.
+    await openCreate(p, {
+      name: "fake.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("not an image"),
+    });
+    await p.getByRole("button", { name: "CREATE" }).click();
+    await p.getByText("只支援 JPEG / PNG / WebP").waitFor();
+
+    // Server-side limits, as the server would answer them.
+    for (const [status, error, message] of [
+      [429, "rate_limited", "操作太頻繁了"],
+      [429, "daily_limit_reached", "今天的免費生成次數已用完"],
+      [503, "daily_budget_reached", "今天的生成額度已用完"],
+    ]) {
+      await p.route("**/api/generate", (r) =>
+        r.fulfill({ status, json: { error } }),
+      );
+      await openCreate(p, {
+        name: "x.png",
+        mimeType: "image/png",
+        buffer: uniquePng(error),
+      });
+      await p.getByRole("button", { name: "CREATE" }).click();
+      await p.getByText(message).waitFor();
+      await p.unroute("**/api/generate");
+    }
+  },
+);
+
+test(
+  "a 4–8MB photo is shrunk in the browser to fit hosting limits",
+  { timeout: 120_000 },
+  async () => {
+    const big = join(tmp, "big.png");
+    const made = spawn(PYTHON, [
+      "-c",
+      "import os,sys; from PIL import Image; Image.frombytes('RGB',(1400,1300),os.urandom(1400*1300*3)).save(sys.argv[1])",
+      big,
+    ]);
+    await new Promise((r) => made.on("exit", r));
+    const bytes = await readFile(big);
+    assert.ok(
+      bytes.length > 4 * 1024 * 1024 && bytes.length < 8 * 1024 * 1024,
+      `${bytes.length}`,
+    );
+    const p = await page();
+    const before = modelCalls.length;
+    await openCreate(p, {
+      name: "big.png",
+      mimeType: "image/png",
+      buffer: bytes,
+    });
+    await p.getByRole("button", { name: "CREATE" }).click();
+    await p.waitForURL(/\/result\//, { timeout: 30_000 });
+    const sent = modelCalls.slice(before)[0].body.input[1];
+    assert.equal(sent.mime_type, "image/jpeg");
+    assert.ok(Buffer.from(sent.data, "base64").length <= 4 * 1024 * 1024);
   },
 );

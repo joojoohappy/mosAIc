@@ -339,6 +339,15 @@ class ResultStore(Base):
             with self.subTest(bad=bad):
                 self.assertIsNone(generate.load_result(bad))
 
+    def test_results_expire_after_the_retention_period(self):
+        r = generate.run_generation(self.recipe, JPEG)
+        path = self.results / f"{r['resultId']}.json"
+        old = {**r, "createdAt": "2020-01-01T00:00:00Z"}
+        path.write_text(json.dumps(old), encoding="utf-8")
+        self.assertIsNone(generate.load_result(r["resultId"]))
+        with mock.patch.dict("os.environ", {"MOSAIC_RESULT_RETENTION_DAYS": "100000"}):
+            self.assertIsNotNone(generate.load_result(r["resultId"]))
+
     def test_unknown_id_is_none_not_an_error(self):
         self.assertIsNone(generate.load_result("0" * 32))
 

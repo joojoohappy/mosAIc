@@ -1005,3 +1005,35 @@ img {
 .next-row .button {
   flex: 1;
 }
+.legal {
+  max-width: 760px;
+  margin: 0 auto;
+  color: var(--mosaic-ink);
+  line-height: 1.75;
+}
+.legal h1 {
+  font-size: 28px;
+}
+.legal h2 {
+  margin-top: 28px;
+  font-size: 18px;
+}
+.legal ul {
+  padding-left: 20px;
+}
+.legal a {
+  color: var(--mosaic-blue);
+}
+.legal-updated {
+  color: var(--mosaic-muted);
+  font-size: 13px;
+}
+.consent {
+  margin: 0;
+  color: var(--mosaic-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.consent a {
+  color: var(--mosaic-blue);
+}
