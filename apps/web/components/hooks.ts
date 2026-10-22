@@ -50,3 +50,17 @@ export function useFavorites() {
   }
   return { ids, toggle, ready };
 }
+/** Copy-to-clipboard with a status line. `share` copies the current page URL. */
+export function useShareLink(fallbackMessage: string) {
+  const [notice, setNotice] = useState("");
+  async function copy(text: string, done: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice(done);
+    } catch {
+      setNotice(fallbackMessage);
+    }
+  }
+  const share = () => copy(window.location.href, "連結已複製");
+  return { notice, setNotice, share, copy };
+}

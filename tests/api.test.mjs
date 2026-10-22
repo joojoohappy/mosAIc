@@ -17,6 +17,9 @@ const recipe = {
   creatorInstagramUrl: null,
   previewImageUrl: null,
   inputNote: "One photo",
+  aspectRatio: "3:4",
+  promptVisibility: "public",
+  prompt: "Make a poster",
   tryReady: false,
 };
 const json = (data, status = 200) =>
@@ -130,6 +133,16 @@ test("malformed JSON/envelopes and invalid IDs are rejected", async () => {
     fetch: async () => json({ recipes: [{ ...recipe, tryReady: "false" }] }),
   });
   await assert.rejects(api.listRecipes(), { code: "invalid_response" });
+  // A hidden prompt must arrive as null; text alongside "hidden" is a contract break.
+  const leaky = createMosaicClient({
+    fetch: async () => json({ ...recipe, promptVisibility: "hidden" }),
+  });
+  await assert.rejects(leaky.getRecipe("seed-01"), {
+    code: "invalid_response",
+  });
+  const hidden = { ...recipe, promptVisibility: "hidden", prompt: null };
+  const ok = createMosaicClient({ fetch: async () => json(hidden) });
+  assert.deepEqual(await ok.getRecipe("seed-01"), hidden);
   let calls = 0;
   const invalid = createMosaicClient({
     fetch: async () => {

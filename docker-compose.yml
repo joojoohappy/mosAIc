@@ -1,8 +1,10 @@
 services:
   backend:
     build: ./apps/backend
-    ports: ["8010:8000"]  # host :8000 is taken locally (see README) -- container port is unaffected
-    env_file: apps/backend/.env   # local only, gitignored -- see apps/backend/.env.example
+    ports: ["8010:8000"] # host 8010 avoids clashing with a local backend on 8000
+    env_file: # local only, gitignored -- see apps/backend/.env.example
+      - path: apps/backend/.env
+        required: false # no key -> results fall back to cached/mock
 
   web:
     build:
@@ -10,5 +12,5 @@ services:
       dockerfile: apps/web/Dockerfile
     ports: ["3000:3000"]
     environment:
-      BACKEND_URL: http://backend:8000   # container-to-container, over compose's network
+      BACKEND_URL: http://backend:8000 # container-to-container, over compose's network
     depends_on: [backend]

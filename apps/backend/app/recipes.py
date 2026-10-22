@@ -12,11 +12,12 @@ from pathlib import Path
 
 RECIPES_FILE = Path(__file__).resolve().parent.parent / "data" / "recipes.json"
 
-# An ALLOWLIST, not a "drop the prompt" denylist: a private field added to
+# An ALLOWLIST, not a "drop the private bits" denylist: a field added to
 # recipes.json later stays private by default instead of leaking on the next deploy.
 PUBLIC_FIELDS = (
     "id", "title", "summary", "sourcePostUrl", "creatorName",
-    "creatorInstagramUrl", "previewImageUrl", "inputNote", "tryReady",
+    "creatorInstagramUrl", "previewImageUrl", "inputNote", "aspectRatio",
+    "promptVisibility", "tryReady",
 )
 
 
@@ -29,6 +30,15 @@ def get_recipe(recipe_id: str) -> dict | None:
 
 
 def public_recipe(recipe: dict) -> dict:
-    """What a client is allowed to see. Never includes prompt text -- the whole
-    point of recipeId-in-prompt-out is that the prompt stays server-side."""
-    return {k: recipe.get(k) for k in PUBLIC_FIELDS}
+    """What a client is allowed to see.
+
+    The prompt text is included only when the creator shared it publicly
+    (promptVisibility == "public"). Anything else -- "hidden", a typo, a missing
+    field -- keeps it server-side. Either way the client never *sends* a prompt:
+    generation looks it up by recipeId, so showing it is read-only.
+    """
+    projection = {k: recipe.get(k) for k in PUBLIC_FIELDS}
+    public = recipe.get("promptVisibility") == "public"
+    projection["promptVisibility"] = "public" if public else "hidden"
+    projection["prompt"] = recipe.get("prompt") if public else None
+    return projection

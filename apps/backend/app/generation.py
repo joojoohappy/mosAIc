@@ -1,7 +1,6 @@
 """MOSAIC generation pipeline.
 
-Framework-free on purpose: no FastAPI imports, so this runs and is testable before
-the Next.js app exists.
+Framework-free on purpose: no FastAPI imports, so it can be tested on its own.
 
 Three result modes, and one of them is ALWAYS declared:
 
@@ -34,9 +33,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from . import provider
+
 # Paths resolve from this file, never from cwd -- uvicorn and pytest run from
 # different directories.
-ROOT = Path(__file__).resolve().parent.parent   # backend/
+ROOT = Path(__file__).resolve().parent.parent   # apps/backend/
 STORAGE = ROOT / "storage"
 FALLBACK_DIR = STORAGE / "fallback"
 RESULTS_DIR = STORAGE / "results"
@@ -46,10 +47,10 @@ RESULT_ID_RE = re.compile(r"^[0-9a-f]{32}$")
 SIDECAR_REQUIRED = ("image", "provider", "model", "generatedAt", "inputPhoto")
 
 
-# backend/.env (gitignored) holds the key; see .env.example. Loaded here rather
-# than in main.py so pregen.py and the tests get it too.
+# apps/backend/.env (gitignored) holds the key; see .env.example. Loaded here
+# rather than in main.py so pregen.py gets it too.
 load_dotenv(ROOT / ".env")
-API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+API_KEY = os.environ.get("GEMINI_API_KEY")
 
 
 def _now() -> str:
@@ -95,22 +96,19 @@ def _read_sidecar(recipe_id: str) -> dict | None:
         return None
 
 
-def _call_provider(prompt: str, image_bytes: bytes) -> bytes:
-    """Prompt + user photo -> image bytes. Returns bytes only; writes nothing.
+def _call_provider(recipe: dict, image_bytes: bytes) -> bytes:
+    """Recipe prompt + user photo -> image bytes. Returns bytes only; writes nothing.
 
-    NOT IMPLEMENTED -- no provider selected yet (CREATIVE-RECIPE.md:68).
-
-    This is pre-Build-Day work, not day-of work: pregen.py is this function's CLI
-    entry point, so running pregen before the event already requires it to exist.
-    Fill it in by reading the provider's live docs for the exact model id, endpoint
-    and request shape. Do not write the call from memory.
-
-    Must honour: a hard deadline, zero retries, no filesystem access.
-    Set the deadline from what pregen measured — the slowest seed's durationSec in
-    storage/fallback/*.json, times 1.5, capped at 60s. A round number picked now
-    would just be a guess about a provider nobody has called yet.
+    The provider call itself lives in provider.py (hard deadline, zero retries,
+    no filesystem access). Patched out in tests.
     """
-    raise NotImplementedError("provider not selected yet -- see docstring")
+    return provider.generate(
+        API_KEY or "",
+        recipe["prompt"],
+        image_bytes,
+        _is_image(image_bytes) or "png",
+        recipe.get("aspectRatio"),
+    )
 
 
 def _load_fallback(recipe_id: str) -> tuple[bytes | None, str, dict | None]:
@@ -174,7 +172,7 @@ def run_generation(recipe: dict, image_bytes: bytes) -> dict:
 
     if API_KEY:
         try:
-            img = _call_provider(recipe["prompt"], image_bytes)
+            img = _call_provider(recipe, image_bytes)
             if _is_image(img) is None:
                 raise ValueError("provider returned bytes that are not an image")
             mode = "live"

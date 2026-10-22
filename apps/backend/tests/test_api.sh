@@ -2,10 +2,10 @@
 # HTTP contract smoke test. Unit tests cover the pipeline; this covers the ifs in
 # main.py and proves the documented status codes are the real ones.
 #
-#   ./backend/tests/test_api.sh   # starts its own server on :8001
+#   apps/backend/tests/test_api.sh   # starts its own server on :8001
 #   BASE=http://localhost:3000 ./test_api.sh   # through the Next.js proxy
 set -uo pipefail
-cd "$(dirname "$0")/.."          # backend/
+cd "$(dirname "$0")/.."          # apps/backend/
 
 RECIPES=data/recipes.json
 BACKUP=$(mktemp); cp "$RECIPES" "$BACKUP"
@@ -25,7 +25,7 @@ json.dump(d,open(p,'w'),ensure_ascii=False,indent=2)
 " "$RECIPES"
 
 if [ -z "${BASE:-}" ]; then
-  ./.venv/bin/uvicorn app.main:app --port 8001 >/tmp/mosaic-test-api.log 2>&1 &
+  GEMINI_API_KEY= ./.venv/bin/uvicorn app.main:app --port 8001 >/tmp/mosaic-test-api.log 2>&1 &
   BASE=http://localhost:8001
   until curl -sf "$BASE/api/health" >/dev/null 2>&1; do sleep 0.2; done
 fi
@@ -41,11 +41,11 @@ check() { # name expected_code curl-args...
   if [ "$got" = "$want" ]; then pass=$((pass+1)); printf '  ok    %-34s %s\n' "$name" "$got"
   else fail=$((fail+1)); printf '  FAIL  %-34s got %s want %s\n' "$name" "$got" "$want"; fi
 }
-absent() { # name needle url  -- fails if the needle appears in the body
+present() { # name needle url  -- fails unless the needle appears in the body
   local name=$1 needle=$2 url=$3
-  if curl -s "$url" | grep -q "$needle"; then
-    fail=$((fail+1)); printf '  FAIL  %-34s %s leaked\n' "$name" "$needle"
-  else pass=$((pass+1)); printf '  ok    %-34s absent\n' "$name"; fi
+  if curl -s "$url" | grep -qF "$needle"; then
+    pass=$((pass+1)); printf '  ok    %-34s present\n' "$name"
+  else fail=$((fail+1)); printf '  FAIL  %-34s %s missing\n' "$name" "$needle"; fi
 }
 
 echo "smoke: $BASE"
@@ -53,8 +53,7 @@ check  "health"                 200 "$BASE/api/health"
 check  "list recipes"           200 "$BASE/api/recipes"
 check  "read recipe"            200 "$BASE/api/recipes/seed-01"
 check  "read unknown recipe"    404 "$BASE/api/recipes/seed-99"
-absent "list omits prompt"      '"prompt"' "$BASE/api/recipes"
-absent "detail omits prompt"    '"prompt"' "$BASE/api/recipes/seed-01"
+present "public prompt shown"   '"promptVisibility":"public"' "$BASE/api/recipes/seed-01"
 check  "missing recipeId"       400 -F image=@"$TMP/ok.jpg"                        "$BASE/api/generate"
 check  "unknown recipe"         404 -F recipeId=seed-99 -F image=@"$TMP/ok.jpg"    "$BASE/api/generate"
 check  "unverified recipe"      403 -F recipeId=seed-01 -F image=@"$TMP/ok.jpg"    "$BASE/api/generate"

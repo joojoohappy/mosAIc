@@ -1,8 +1,8 @@
 """MOSAIC backend — five routes and a static mount. That is the whole HTTP layer.
 
-Run:  uvicorn app.main:app --app-dir backend --port 8000   (no --reload for a demo)
+Run:  uvicorn app.main:app --app-dir apps/backend --port 8000   (no --reload for a demo)
 
-No CORS middleware, deliberately. The website's next.config.js proxies /api/* and
+No CORS middleware, deliberately. The website's next.config.ts proxies /api/* and
 /static/* here, so the browser only ever talks to localhost:3000.
 
 Routes are `def`, not `async def`. Starlette runs sync routes in a threadpool, so a
@@ -28,7 +28,7 @@ app.mount("/static", StaticFiles(directory=STORAGE), name="static")
 if not any(r.get("tryReady") for r in load_recipes()):
     print("[recipes] WARNING: no recipe has tryReady=true — POST /api/generate will "
           "return 403 recipe_not_ready for all of them. Flip the ones you have "
-          "verified in backend/data/recipes.json.")
+          "verified in apps/backend/data/recipes.json.")
 
 
 def _err(code: int, error: str) -> JSONResponse:
@@ -37,13 +37,13 @@ def _err(code: int, error: str) -> JSONResponse:
 
 @app.get("/api/health")
 def health():
-    # Two lines that tell Person 1 "backend is down" instead of a generic error.
+    # Lets the frontend say "backend is down" instead of a generic error.
     return {"ok": True}
 
 
 @app.get("/api/recipes")
 def list_recipes():
-    # Public projection only. The client never receives prompt text.
+    # Public projection only (see recipes.public_recipe).
     return {"recipes": [public_recipe(r) for r in load_recipes()]}
 
 

@@ -53,9 +53,16 @@ export function isPublicRecipe(value: unknown): value is PublicRecipe {
     ["id", "title", "summary", "sourcePostUrl", "inputNote"].every(
       (k) => typeof value[k] === "string",
     ) &&
-    ["creatorName", "creatorInstagramUrl", "previewImageUrl"].every((k) =>
-      nullableString(value[k]),
-    ) &&
+    [
+      "creatorName",
+      "creatorInstagramUrl",
+      "previewImageUrl",
+      "aspectRatio",
+      "prompt",
+    ].every((k) => nullableString(value[k])) &&
+    (value.promptVisibility === "public"
+      ? typeof value.prompt === "string"
+      : value.promptVisibility === "hidden" && value.prompt === null) &&
     typeof value.tryReady === "boolean"
   );
 }

@@ -1,6 +1,6 @@
-# MOSAIC 前端對接
+# API contract
 
-Implementation reference: [MOSAIC 前端對接](https://claude.ai/artifact/VKcqRCFHdSMFTxTCfqf7wA), checked against the FastAPI source on 2026-09-28.
+How the web app talks to the FastAPI backend. Checked against the source on 2026-10-22.
 
 ## Transport
 
@@ -14,7 +14,7 @@ The web app uses same-origin `/api/*` and `/static/*`. `apps/web/next.config.ts`
 | `POST /api/generate`          | Multipart `recipeId` + one `image`; response `{ "resultId": "32 lowercase hex characters" }` |
 | `GET /api/results/{resultId}` | `GenerationResult`                                                                           |
 
-`packages/types` preserves the existing public projection. Recipe data is fetched at runtime. Never import the backend recipe JSON into web/mobile code, send a prompt, or fabricate an unverified creator. A null creator displays `來源待確認` with the original post link. A null preview displays the designed image placeholder.
+`packages/types` mirrors the public projection in `apps/backend/app/recipes.py`. Recipe data is fetched at runtime. Never import the backend recipe JSON into web/mobile code, send a prompt, or fabricate an unverified creator. `prompt` is the creator's full text when `promptVisibility` is `public`, and `null` otherwise; the client only displays it, and generation always looks the prompt up by `recipeId`. A null creator displays `來源待確認` with the original post link. A null preview displays the designed image placeholder.
 
 ## Generation
 
@@ -45,6 +45,10 @@ Always render `sourceNote` verbatim. Do not show `fallbackReason` to users. Do n
 
 On network/proxy failure, check `/api/health`; if unreachable, show `後端未啟動`. Unexpected payloads and timeouts have separate recovery messages. Failed generation is never automatically re-submitted.
 
-## Current backend state
+## Image provider
 
-The three seeds remain `tryReady: false`. `_call_provider()` is still unimplemented. The frontend preserves these states; readiness/provider configuration must be completed by the backend owners before live generation can work. No readiness values or provider behavior were changed in this migration.
+`apps/backend/app/provider.py` calls a Google Gemini image model through the Interactions REST API with the recipe prompt, the uploaded photo and the recipe's `aspectRatio`. It has a hard deadline (60 s max), no retries and no filesystem access. Without `GEMINI_API_KEY` every request falls back to `cached` (if a pre-generated sidecar exists in `storage/fallback/`) or `mock`.
+
+## Current state
+
+All three seeds are `tryReady: false` until their creators and usage basis are verified, so `POST /api/generate` returns 403 for them.

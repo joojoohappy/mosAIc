@@ -42,12 +42,7 @@ export function Shell({
         <nav aria-label="主要導覽">
           {[
             { href: "/", label: "Discover" },
-            ...(!about
-              ? [
-                  { href: "/my-recipes", label: "My Recipes" },
-                  { href: "/community", label: "Community" },
-                ]
-              : []),
+            { href: "/my-recipes", label: "My Recipes" },
             { href: "/about", label: "About" },
           ].map((item) => (
             <Link
@@ -71,16 +66,16 @@ export function Shell({
       </header>
       {children}
       <footer className="footer">
-        <p>
-          {about
-            ? "© 2026 mosAIc. All rights reserved."
-            : "© 2025 mosAIc. Creative AI prompt sharing platform."}
-        </p>
+        <p>© 2026 mosAIc. Creative AI prompt sharing platform.</p>
         <div>
-          {!about && <Link href="/about">About</Link>}
-          <span>Terms{about ? " of Service" : ""}</span>
-          <span>Privacy{about ? " Policy" : ""}</span>
-          {!about && <span>Help</span>}
+          <Link href="/about">About</Link>
+          <a
+            href="https://github.com/joojoohappy/mosAIc"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub
+          </a>
         </div>
       </footer>
     </div>
@@ -116,30 +111,40 @@ export function Placeholder({
     </div>
   );
 }
+const isHttp = (url: string | null): url is string =>
+  !!url && /^https?:\/\//i.test(url);
+/**
+ * Creator credit + links. The IG link appears only for a verified creator
+ * (creatorName set); the original post is always linked.
+ */
 export function Attribution({
   creatorName,
   creatorInstagramUrl,
   sourcePostUrl,
+  hideName = false,
 }: Pick<
   PublicRecipe,
   "creatorName" | "creatorInstagramUrl" | "sourcePostUrl"
->) {
-  const href = creatorName
-    ? creatorInstagramUrl || sourcePostUrl
-    : sourcePostUrl;
-  const safe = /^https?:\/\//i.test(href);
-  const label = creatorName || "來源待確認 · 查看原始貼文";
-  return safe ? (
-    <a
-      className="attribution"
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {label}
-    </a>
-  ) : (
-    <span className="attribution">{creatorName || "來源待確認"}</span>
+> & {
+  hideName?: boolean;
+}) {
+  const external = { target: "_blank", rel: "noopener noreferrer" };
+  return (
+    <p className="attribution">
+      {!hideName && (
+        <span>{creatorName ? `by ${creatorName}` : "來源待確認"}</span>
+      )}
+      {creatorName && isHttp(creatorInstagramUrl) && (
+        <a href={creatorInstagramUrl} {...external}>
+          前往原作者 IG
+        </a>
+      )}
+      {isHttp(sourcePostUrl) && (
+        <a href={sourcePostUrl} {...external}>
+          查看原始貼文
+        </a>
+      )}
+    </p>
   );
 }
 export function Back({

@@ -19,3 +19,7 @@ apps/backend/storage/fallback/*
 /docs/build-day/
 /docs/backend-architecture.html
 /docs/frontend-integration.html
+
+# Owner's private notes. Never commit them: this repository is public.
+OWNER-NOTES.md
+*.private.md

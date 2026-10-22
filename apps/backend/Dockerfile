@@ -1,6 +1,4 @@
-# Verification-only image: confirms the wiring, not a production build.
-# (docs/build-day non-goals explicitly exclude Docker/prod deploy for Build Day
-# itself — this exists because the user asked to verify local integration now.)
+# Local integration image (used by the root docker-compose.yml).
 FROM python:3.12-slim
 
 WORKDIR /app
