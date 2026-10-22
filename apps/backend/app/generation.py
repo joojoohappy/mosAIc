@@ -95,7 +95,18 @@ def validate_upload(data: bytes) -> str | None:
         with Image.open(io.BytesIO(data)) as img:
             if img.width * img.height > MAX_PIXELS:
                 return "invalid_image"
-            img.verify()
+            if kind == "png":
+                # verify() checks every chunk CRC, which catches truncation.
+                img.verify()
+            else:
+                # For JPEG, verify() only parses headers: a photo cut off at 1%
+                # passed. Decoding walks the whole compressed stream. draft()
+                # lets libjpeg decode at 1/8 scale, which still reads every byte
+                # but costs about half of a full decode (benchmarks/
+                # compare_validation.py). WebP has no draft mode: full decode.
+                if kind == "jpg":
+                    img.draft("RGB", (max(1, img.width // 8), max(1, img.height // 8)))
+                img.load()
     except Exception:  # noqa: BLE001 - any decode failure means "not a usable photo"
         return "invalid_image"
     return None

@@ -13,9 +13,15 @@ fresh deployment cannot run up a large bill before anyone has looked at it.
 Per-visitor and concurrency limits are kept in memory, so on a multi-instance
 host each instance enforces them separately. The global daily budget is the
 real cost guard: it is stored in the results store (local disk or Vercel Blob)
-and is shared by every instance. Under heavy parallel load it can overshoot by
-at most MOSAIC_MAX_CONCURRENT per instance. Set a hard spending cap with the
-model provider as well.
+and is shared by every instance. It is a read-modify-write without a
+cross-process lock, so when several instances or worker processes update it
+at the same moment an increment can be lost, and each lost increment is one
+more paid call allowed that day. The overshoot is therefore not bounded by
+MOSAIC_MAX_CONCURRENT: with 4 local worker processes under sustained load, one
+of 5 trials made 73 calls against a limit of 50 (budget_race in
+benchmarks/results/reliability_baseline.json). Within one process the counter
+is exact. Set a hard spending cap with the model provider: that is the guard
+that actually holds.
 """
 
 from __future__ import annotations
@@ -81,12 +87,15 @@ class Limiter:
     """In-memory per-visitor windows, duplicate detection and a concurrency gate."""
 
     DEDUPE_SECONDS = 600
+    MAX_WAITERS = 8  # requests parked behind an identical one, across all keys
 
     def __init__(self):
         self._lock = threading.Lock()
         self._minute: dict[str, deque] = defaultdict(deque)
         self._daily: dict[tuple[str, str], int] = defaultdict(int)
         self._recent: dict[str, tuple[str, float]] = {}
+        self._inflight: dict[str, threading.Event] = {}
+        self._waiters = 0
         self._running = 0
 
     def reset(self) -> None:
@@ -94,7 +103,41 @@ class Limiter:
             self._minute.clear()
             self._daily.clear()
             self._recent.clear()
+            self._inflight.clear()
+            self._waiters = 0
             self._running = 0
+
+    # recent_result only knows about generations that have finished. A refresh
+    # or a second click while the first identical request is still waiting on
+    # the model would otherwise pay again; with a real model that window is
+    # the whole 10-60 s generation. lead() lets the first request run and parks
+    # identical ones until it is done.
+    def lead(self, key: str) -> str:
+        """"lead": run the generation, then call done(key).
+        "waited": an identical request was running and has now finished
+                  (look for its result with recent_result).
+        "bypass": too many requests already parked; handle this one normally."""
+        with self._lock:
+            leader = self._inflight.get(key)
+            if leader is None:
+                self._inflight[key] = threading.Event()
+                return "lead"
+            if self._waiters >= self.MAX_WAITERS:
+                return "bypass"
+            self._waiters += 1
+        try:
+            leader.wait(timeout=75)  # provider deadline (<= 60 s) plus storage
+        finally:
+            with self._lock:
+                self._waiters -= 1
+        return "waited"
+
+    def done(self, key: str) -> None:
+        """The leading request for `key` finished (with or without a result)."""
+        with self._lock:
+            event = self._inflight.pop(key, None)
+        if event is not None:
+            event.set()
 
     # Same recipe + same photo within 10 minutes -> the earlier result. A double
     # click, a refresh mid-generation, or a resubmit never pays twice.

@@ -154,8 +154,8 @@ def generate(
     if problem:
         return _err(400, problem)
 
-    # Same recipe + same photo shortly after: hand back the earlier result. A
-    # double click or a refresh mid-generation never pays twice.
+    # Same recipe + same photo within 10 minutes: hand back the earlier result.
+    # (Identical requests that are still running are handled by limiter.lead.)
     key = fingerprint(recipe["id"], data)
     earlier = limiter.recent_result(key)
     if earlier:
@@ -166,6 +166,24 @@ def generate(
     if refused:
         log.info("generate refused recipe=%s reason=%s", recipe["id"], refused)
         return _err(429, refused)
+
+    # An identical request still in flight (a refresh or second click during
+    # the 10-60 s model call): wait for it and hand back the same result.
+    role = limiter.lead(key)
+    if role == "waited":
+        earlier = limiter.recent_result(key)
+        if earlier:
+            return {"resultId": earlier}
+        # It ended without a result (busy, budget, error): answer this one on its own.
+    if role != "lead":
+        return _generate_once(recipe, data, key)
+    try:
+        return _generate_once(recipe, data, key)
+    finally:
+        limiter.done(key)
+
+
+def _generate_once(recipe: dict, data: bytes, key: str):
     if not limiter.acquire():
         return _err(503, "server_busy")
     started = time.monotonic()

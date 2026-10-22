@@ -14,9 +14,13 @@ never needs to know which store is in use and a private Blob store works.
 
 from __future__ import annotations
 
+import logging
 import os
+import uuid
 from pathlib import Path
 from typing import Protocol
+
+log = logging.getLogger("mosaic.storage")
 
 CONTENT_TYPES = {
     "json": "application/json",
@@ -41,10 +45,13 @@ class LocalStore:
 
     def put(self, name: str, data: bytes) -> None:
         # tmp + replace: a reader that arrives mid-write sees the old file or
-        # nothing, never half a JSON document.
+        # nothing, never half a JSON document. The tmp name is unique per write:
+        # with a shared name, two worker processes writing the same file raced
+        # and one os.replace failed with FileNotFoundError (an HTTP 500 after a
+        # paid call; benchmarks/bench_reliability.py budget_race).
         self.root.mkdir(parents=True, exist_ok=True)
         final = self.root / name
-        tmp = final.with_name(final.name + ".tmp")
+        tmp = final.with_name(f"{final.name}.{uuid.uuid4().hex}.tmp")
         tmp.write_bytes(data)
         os.replace(tmp, final)
 
@@ -78,7 +85,8 @@ class BlobStore:
             return self.client.get_blob(self.prefix + name, access=self.access).body
         except Exception as err:  # noqa: BLE001 - missing or unreachable reads as absent
             if type(err).__name__ != "BlobNotFoundError":
-                print(f"[storage] blob read failed for {name}: {type(err).__name__}: {err}")
+                log.warning("blob read failed name=%s error=%s: %s",
+                            name, type(err).__name__, str(err)[:200])
             return None
 
 
