@@ -32,7 +32,8 @@ Creators on social media spend hours testing and refining image-generation promp
 - **One-click try.** The server pairs your photo with the recipe's stored prompt and sends both to the image model. The browser never handles API keys or sends prompt text.
 - **Honest results.** Each result is labelled `live` (made from your photo just now), `cached` (a prepared example from a test photo) or `mock` (placeholder). A sample is never passed off as yours.
 - **Your photo isn't kept.** mosAIc forwards it to the image model and does not save it.
-- **Shareable results.** Every result has its own link that still works after a refresh.
+- **Private, shareable results.** Every result has its own unguessable link that still works after a refresh. Nothing is listed publicly; it is seen only if you share it. Links expire after 30 days.
+- **Fair use built in.** Per-visitor and daily limits, a daily spending ceiling and duplicate-click protection keep a free demo from running up a bill. The site's `/privacy` page explains how data is handled.
 
 ## Recipes
 
@@ -78,11 +79,21 @@ cd apps/backend && .venv/bin/python -m scripts.pregen seed-01 path/to/test-photo
 ## Tests
 
 ```sh
-pnpm typecheck && pnpm test                                             # web client + real HTTP upload tests
-cd apps/backend && .venv/bin/python -m unittest discover -s tests -v   # backend pipeline
-bash apps/backend/tests/test_api.sh                                     # HTTP status codes
-pnpm build                                                               # production build
+bash scripts/test-all.sh   # everything below, in order; stops at the first failure
 ```
+
+| What                                                       | Command                                                             |
+| ---------------------------------------------------------- | ------------------------------------------------------------------- |
+| Format + TypeScript                                        | `pnpm lint`                                                         |
+| Backend unit tests                                         | `cd apps/backend && .venv/bin/python -m unittest discover -s tests` |
+| API status codes over HTTP                                 | `bash apps/backend/tests/test_api.sh`                               |
+| Web client, real upload, proxy                             | `pnpm test`                                                         |
+| Production build                                           | `pnpm build`                                                        |
+| Browser tests (journey, accessibility, links, performance) | `pnpm test:e2e`                                                     |
+
+Browser tests use Playwright with a fake image model, so they never call Google or cost money. Install dev tools with `apps/backend/.venv/bin/pip install -r apps/backend/requirements-dev.txt`. CI runs the same script plus `pnpm audit` and `pip-audit` on every push.
+
+To check a deployed site (read-only), run `bash scripts/smoke.sh https://your-site`. Add `SMOKE_GENERATE=1` to also run one real, billable generation.
 
 ## Project structure
 
@@ -94,7 +105,7 @@ packages/api     Typed API client shared by web and mobile
 packages/types   Shared API types
 packages/core    Upload validation
 packages/design  Design tokens
-docs/            Product, API contract and design notes
+docs/            Product, API contract, design notes and release reports
 ```
 
 More detail: [product](docs/product/README.md) · [API contract](docs/architecture/api-contract.md) · [design](docs/design/README.md)
@@ -103,11 +114,25 @@ More detail: [product](docs/product/README.md) · [API contract](docs/architectu
 
 The website needs a running Next.js server (not a static export): it proxies `/api/*` and `/static/*` to the FastAPI server set in `BACKEND_URL` at build time. Allow requests of at least 75 seconds, since generation can take up to 60.
 
+Settings (all server-side; see `apps/backend/.env.example` and `apps/web/.env.example`):
+
+| Where   | Variable                                                      | Purpose                                                                   |
+| ------- | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| API     | `GEMINI_API_KEY`                                              | Turns on live generation. Set a spending cap in Google AI Studio too.     |
+| API     | `MOSAIC_DAILY_GLOBAL` (default 50)                            | Paid generations per day across all visitors                              |
+| API     | `MOSAIC_RATE_PER_MINUTE` / `MOSAIC_DAILY_PER_CLIENT` (3 / 10) | Per-visitor limits                                                        |
+| API     | `BLOB_READ_WRITE_TOKEN`                                       | Vercel Blob for results. On Vercel, live generation stays off without it. |
+| Both    | `MOSAIC_PROXY_SECRET`                                         | Same random value on both, so limits count real visitors                  |
+| Website | `BACKEND_URL`                                                 | The API's origin                                                          |
+
+Limits are conservative defaults, not final product decisions. Details: [API contract](docs/architecture/api-contract.md) · [release checklist](docs/release/v0.1-release-checklist.md) · [security and cost review](docs/release/v0.1-security-cost-review.md).
+
 ## Roadmap
 
 - [x] Gallery, recipe, try and result pages connected to the API
 - [x] Honest live / cached / mock results
 - [x] Gemini image generation
+- [x] Cost limits, result storage, privacy and terms, accessibility checks, CI
 - [ ] Verify creators and Instagram links; add their preview images
 - [ ] Open the first recipes for Try and record the demo video
 - [ ] Deploy a public instance
