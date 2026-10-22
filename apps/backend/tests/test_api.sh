@@ -27,7 +27,15 @@ json.dump(d,open(p,'w'),ensure_ascii=False,indent=2)
 if [ -z "${BASE:-}" ]; then
   ./.venv/bin/uvicorn app.main:app --port 8001 >/tmp/mosaic-test-api.log 2>&1 &
   BASE=http://localhost:8001
-  until curl -sf "$BASE/api/health" >/dev/null 2>&1; do sleep 0.2; done
+  # Bounded, like scripts/dev.sh: an unbounded `until curl` loop spins forever when
+  # uvicorn fails to start (observed: missing .venv/bin/uvicorn hung this script).
+  up=""
+  for _ in $(seq 75); do
+    if curl -sf "$BASE/api/health" >/dev/null 2>&1; then up=1; break; fi
+    if ! kill -0 %1 2>/dev/null; then echo "backend exited during startup (see /tmp/mosaic-test-api.log)"; exit 1; fi
+    sleep 0.2
+  done
+  [ -n "$up" ] || { echo "backend did not answer /api/health within 15s"; exit 1; }
 fi
 
 printf '\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01' > "$TMP/ok.jpg"; head -c 512 /dev/urandom >> "$TMP/ok.jpg"
@@ -61,6 +69,13 @@ check  "unverified recipe"      403 -F recipeId=seed-01 -F image=@"$TMP/ok.jpg" 
 check  "missing image"          400 -F recipeId=seed-02                            "$BASE/api/generate"
 check  "text renamed .jpg"      400 -F recipeId=seed-02 -F image=@"$TMP/fake.jpg"  "$BASE/api/generate"
 check  "oversize upload"        400 -F recipeId=seed-02 -F image=@"$TMP/big.png"   "$BASE/api/generate"
+check  "oversize upload, chunked" 400 -H "Transfer-Encoding: chunked" -F recipeId=seed-02 -F image=@"$TMP/big.png" "$BASE/api/generate"
+# The status alone is not enough: the frontend maps the error CODE to the message.
+for te in "" "Transfer-Encoding: chunked"; do
+  if curl -s -H "Expect:" ${te:+-H "$te"} -F recipeId=seed-02 -F image=@"$TMP/big.png" "$BASE/api/generate" | grep -q '"too_large"'; then
+    pass=$((pass+1)); printf '  ok    %-34s too_large\n' "oversize body code ${te:+(chunked)}"
+  else fail=$((fail+1)); printf '  FAIL  %-34s not too_large\n' "oversize body code ${te:+(chunked)}"; fi
+done
 check  "bad result id"          404 "$BASE/api/results/nope"
 check  "path traversal"         404 "$BASE/api/results/..%2F..%2Fetc%2Fpasswd"
 check  "unknown result id"      404 "$BASE/api/results/00000000000000000000000000000000"
