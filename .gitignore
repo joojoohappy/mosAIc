@@ -19,3 +19,6 @@ apps/backend/storage/fallback/*
 /docs/build-day/
 /docs/backend-architecture.html
 /docs/frontend-integration.html
+
+# benchmark harness scratch
+benchmarks/raw/backend-last.log

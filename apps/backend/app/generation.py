@@ -29,6 +29,8 @@ import json
 import os
 import re
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout  # not the builtin before 3.11
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -42,6 +44,20 @@ FALLBACK_DIR = STORAGE / "fallback"
 RESULTS_DIR = STORAGE / "results"
 
 MAX_BYTES = 8 * 1024 * 1024
+# Bounded wait for one provider call: after this the caller gets a fallback. The call
+# itself is NOT cancelled (a started thread cannot be stopped). docs/architecture/api-contract.md promises a
+# result within 60 s and the client/proxy give up at 75 s; without this the request
+# simply hung until the client aborted (benchmarks scenario S4). Tighten it from
+# pregen's measured durationSec once a provider exists.
+PROVIDER_TIMEOUT_S = float(os.environ.get("MOSAIC_PROVIDER_TIMEOUT_S", "60"))
+# How many generations may call the provider at once (main.py enforces it per request).
+# Tie it to the provider's rate limit once one is chosen.
+MAX_CONCURRENT_GENERATIONS = int(os.environ.get("MOSAIC_MAX_CONCURRENT_GENERATIONS", "8"))
+# Provider calls run here so a call that overruns its deadline can be abandoned. A
+# Python thread cannot be killed; the pool bounds how many abandoned calls can pile up.
+# Twice the generation limit leaves room for one abandoned call per slot without
+# starving fresh ones. Invariant 1 below is what makes abandoning them safe.
+_provider_pool = ThreadPoolExecutor(max_workers=2 * MAX_CONCURRENT_GENERATIONS, thread_name_prefix="provider")
 RESULT_ID_RE = re.compile(r"^[0-9a-f]{32}$")
 SIDECAR_REQUIRED = ("image", "provider", "model", "generatedAt", "inputPhoto")
 
@@ -113,6 +129,15 @@ def _call_provider(prompt: str, image_bytes: bytes) -> bytes:
     raise NotImplementedError("provider not selected yet -- see docstring")
 
 
+def _call_provider_with_deadline(prompt: str, image_bytes: bytes) -> bytes:
+    future = _provider_pool.submit(_call_provider, prompt, image_bytes)
+    try:
+        return future.result(timeout=PROVIDER_TIMEOUT_S)
+    except FutureTimeout:
+        future.cancel()  # if it never started (pool full of overrunning calls), never start it
+        raise TimeoutError(f"provider exceeded the {PROVIDER_TIMEOUT_S:g}s deadline") from None
+
+
 def _load_fallback(recipe_id: str) -> tuple[bytes | None, str, dict | None]:
     meta = _read_sidecar(recipe_id)
     if meta is None:
@@ -174,7 +199,7 @@ def run_generation(recipe: dict, image_bytes: bytes) -> dict:
 
     if API_KEY:
         try:
-            img = _call_provider(recipe["prompt"], image_bytes)
+            img = _call_provider_with_deadline(recipe["prompt"], image_bytes)
             if _is_image(img) is None:
                 raise ValueError("provider returned bytes that are not an image")
             mode = "live"

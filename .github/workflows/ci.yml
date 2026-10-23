@@ -1,0 +1,44 @@
+# Runs every check that already exists in the repo, on every push and PR.
+# First run: https://github.com/joojoohappy/mosAIc/actions/runs/39916292304 (PR #4, all steps green).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12" # same as apps/backend/Dockerfile
+
+      - name: Backend venv (the wire test and smoke test expect apps/backend/.venv)
+        run: |
+          python -m venv apps/backend/.venv
+          apps/backend/.venv/bin/pip install -r apps/backend/requirements.txt
+
+      - name: Backend unit tests
+        working-directory: apps/backend
+        run: .venv/bin/python -m unittest discover -s tests -v
+
+      - name: Backend HTTP smoke test
+        run: bash apps/backend/tests/test_api.sh
+
+      - uses: pnpm/action-setup@v4 # version comes from package.json "packageManager"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - name: Client + real-HTTP wire tests
+        run: pnpm test
+      - run: pnpm build
