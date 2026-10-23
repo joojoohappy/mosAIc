@@ -12,7 +12,7 @@ This study audited that shell, reproduced its 67 existing tests, and load-tested
 |---|---|---|
 | `/api/health` latency with 40–60 slow generations in flight | ~4.8 s (thread-pool starvation) | 2–11 ms |
 | Caller experience when the model hangs | request open until the client gave up (20 s test cap; 75 s in production config) | labelled fallback result at the deadline (5.1 s at test setting; 60 s default) |
-| Bytes received before rejecting a 256 MB upload | 268 MB (~0.7 s on loopback) | < 1.3 MB (~1 ms) |
+| Bytes the client had sent when a 256 MB upload was rejected (curl `size_upload`) | 268 MB, all parsed by the server (~0.7 s on loopback) | < 1.3 MB (~1 ms) |
 
 All figures come from [`benchmarks/`](../../benchmarks/) and are reproducible; see [04](04-benchmark-results.md).
 
@@ -52,8 +52,8 @@ Python 3 · FastAPI / Starlette / uvicorn · AnyIO · TypeScript · Next.js 16 /
 There is no model call yet (`_call_provider` raises `NotImplementedError`). The workflow *around* it is designed and tested:
 
 - **Input**: `recipeId` + one image. The prompt is loaded server-side; the public projection is an allowlist, so the prompt cannot reach a client.
-- **Validation**: size (now enforced before parsing), content sniffing by magic bytes, readiness gate (`tryReady`).
-- **Execution**: provider call under a concurrency limit and a hard deadline (this study).
+- **Validation**: size (now enforced before parsing), magic-byte header checks (not full decoding), readiness gate (`tryReady`).
+- **Execution**: provider call under a concurrency limit, with a bounded wait after which the caller gets a fallback (this study; the provider call itself is not cancelled).
 - **Output validation**: provider bytes must pass the same magic-byte check as uploads; a "200 with text" is a failure.
 - **Fallback**: a pre-generated `cached` result only if its provenance sidecar is complete and its image is real; otherwise `mock`.
 - **Disclosure**: the server writes `sourceNote`; the client renders it verbatim and rejects payloads where `mock` carries an image.
@@ -67,7 +67,7 @@ Two processes (Next.js, FastAPI) behind one origin via Next rewrites with a 75 s
 Full records: [07-architecture-decisions.md](07-architecture-decisions.md). The three made in this study:
 
 - **ADR-7 — Dedicated generation limiter + async health.** Starlette runs sync routes on AnyIO's 40-slot default limiter; generation shared it with every read route. A separate `CapacityLimiter` (default 8, configurable) isolates them without changing the HTTP contract. Cost: generation throughput is capped at `limit / provider latency` — intended, and tied to the provider's rate limit.
-- **ADR-8 — Deadline in the pipeline.** Provider calls run in a bounded executor; on timeout the request falls back. Abandoning a thread is safe only because the provider function never writes — an invariant pinned by a new test.
+- **ADR-8 — Bounded wait in the pipeline.** Provider calls run in a bounded executor; on timeout the caller gets a fallback (the started call keeps running; it is not cancelled). Abandoning a thread is safe only because the provider function never writes — an invariant pinned by a new test.
 - **ADR-9 — Upload limit at the ASGI layer.** FastAPI parses the multipart body before the route runs, so an in-route size check is too late. A ~60-line middleware rejects by `Content-Length` or by counting streamed bytes, preserving `400 {"error":"too_large"}`.
 
 ## 9. Testing and benchmark methodology
@@ -80,17 +80,17 @@ Full records: [07-architecture-decisions.md](07-architecture-decisions.md). The 
 
 ![health latency vs in-flight generations](../../benchmarks/charts/s2-head-of-line.png)
 
-![bytes received before rejection](../../benchmarks/charts/s3-upload-guard.png)
+![bytes sent by the client before rejection](../../benchmarks/charts/s3-upload-guard.png)
 
 Full tables (S1 endpoint latency at concurrency 1/8/32, S2–S7): [04-benchmark-results.md](04-benchmark-results.md).
 
 ## 11. Reliability and security
 
-Strong already: prompt confidentiality (allowlist), content-based validation at two trust boundaries, path-safe ids, server-authored provenance, no automatic retry of a non-idempotent paid call, health-based failure classification in the client. Added: concurrency isolation, deadline, pre-parse size limit. Missing: rate limiting, result retention, structured logs/metrics, pinned dependencies.
+Strong already: prompt confidentiality (allowlist), magic-byte header checks at two trust boundaries, path-safe ids, server-authored provenance, no automatic retry of a non-idempotent paid call, health-based failure classification in the client. Added: concurrency isolation, deadline, pre-parse size limit. Missing: rate limiting, result retention, structured logs/metrics, pinned dependencies.
 
 ## 12. Performance improvements
 
-The improvements are reliability-under-load improvements, not speed-ups: health latency under 40–60 concurrent generations (~4.8 s → 2–11 ms), bytes ingested for oversized uploads (268 MB → < 1.3 MB), and bounded time-to-response on a hung provider. The common-path latency (S1) was re-measured to check for regressions; see [05](05-engineering-improvements.md).
+The improvements are reliability-under-load improvements, not speed-ups: health latency under 40–60 concurrent generations (~4.8 s → 2–11 ms), bytes a client can push before an oversized upload is rejected (268 MB → < 1.3 MB), and bounded time-to-response on a hung provider. The common-path latency (S1) was re-measured to check for regressions; see [05](05-engineering-improvements.md).
 
 ## 13. Engineering trade-offs
 

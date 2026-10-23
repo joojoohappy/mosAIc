@@ -140,7 +140,7 @@ def main():
             ax.plot([r["upload_mb"] for r in rs], [r["bytes_sent_by_client"] / 2**20 for r in rs], marker="o", ms=5, lw=2, color=C[lab], label=LABEL[lab])
             ax.annotate(f"{rs[-1]['bytes_sent_by_client']/2**20:.1f} MB", (rs[-1]["upload_mb"], rs[-1]["bytes_sent_by_client"] / 2**20),
                         textcoords="offset points", xytext=(-8, 6), ha="right", fontsize=8, color=INK)
-        style(ax, "S3 · bytes the server accepted before rejecting", "upload size (MB)", "MB received")
+        style(ax, "S3 · bytes the client sent before the server rejected it", "upload size (MB)", "MB sent by client (curl size_upload)")
         ax.legend(frameon=False, fontsize=8)
         fig.tight_layout(); fig.savefig(CH / "s3-upload-guard.png"); plt.close(fig)
 

@@ -32,13 +32,13 @@ Evidence behind the scores:
 - **Ownership**: limited by authorship (§0). The study's fixes are a real, attributable contribution.
 - **Measurable outcomes**: before/after numbers exist for three reliability properties (S2–S4), reproducible from `benchmarks/`. No model metrics exist, so AI/ML roles score low.
 - **Maturity**: no provider, no deployment, no observability, CI never run — 2 everywhere.
-- **Differentiation**: the provenance contract ("never present a cached image as yours", server-authored disclosure, content-validated sidecars) is unusual and makes a memorable story for Solutions and AI-product roles. Generic CRUD + Next.js scores 2 for SWE.
+- **Differentiation**: the provenance contract ("never present a cached image as yours", server-authored disclosure, consistency-checked provenance sidecars) is unusual and makes a memorable story for Solutions and AI-product roles. Generic CRUD + Next.js scores 2 for SWE.
 
 ## 2. Resume bullets (only verified numbers)
 
-1. **Load-tested a FastAPI generation service and removed a head-of-line failure**: with ≥40 concurrent slow model calls, the shared 40-thread pool stalled `/api/health` from ~3 ms to ~4.8 s; isolating generation behind a dedicated AnyIO capacity limiter kept health at 2–11 ms with 60 generations in flight (2 ms with tiny uploads, ≤ 11 ms with 1.6 MB photos) (reproducible benchmark, 3 trials per load level).
-2. **Added a hard deadline to the external model call** (bounded executor, cancel-if-not-started, abandoned calls provably never write): a hung provider now yields a labelled fallback result in 5.1 s at the test setting (60 s default) instead of holding the request open until the client aborts.
-3. **Enforced upload limits at the ASGI layer**, before multipart parsing: a 256 MB request went from fully received (268 MB, ~0.7 s on loopback) to rejected after <1.3 MB in ~1 ms, keeping the documented `too_large` error contract (verified with curl and Chromium).
+1. **Load-tested a FastAPI generation service and removed a head-of-line failure**: with ≥40 concurrent slow (simulated, 5 s) model calls, the shared 40-thread pool stalled `/api/health` from ~3 ms to ~4.8 s; isolating generation behind a dedicated AnyIO capacity limiter kept health at 2–11 ms with 60 generations in flight (2 ms with tiny uploads, ≤ 11 ms with 1.6 MB photos) (reproducible benchmark, 3 trials per load level).
+2. **Bounded response time for a (simulated) external model call** with a labelled fallback (bounded executor, cancel-if-not-started, abandoned calls never write — pinned by a test): against a provider that never returns, the caller now gets a fallback result in 5.1 s at the test setting (60 s default) instead of waiting until it aborts. The started call is not cancelled.
+3. **Enforced upload limits at the ASGI layer**, before multipart parsing: a 256 MB request went from fully sent and parsed (268 MB, ~0.7 s on loopback) to rejected in ~1 ms with < 1.3 MB sent by the client, keeping the documented `too_large` error contract (verified with curl and Chromium).
 4. **Defined the product and API contract for a provenance-first AI image app** (live / cached / mock results with server-authored disclosure; prompts never leave the server) and integrated a FastAPI backend with a Next.js client produced with AI coding agents; contract covered by 39 unit, 20 HTTP-contract and 5 real-HTTP tests.
 5. **Built a reproducible benchmark harness** (isolated server copies, labelled test doubles, zero-dependency load generator, before/after runs against a `git archive` baseline) and documented ADRs, including improvements measured and rejected.
 
@@ -52,7 +52,7 @@ Bullets 1–3 describe work done in this study; keep them only if you can explai
 - *What happens to request 61 now?* It waits for a slot inside the request. With 8 slots and a 5 s provider, 60 requests took ~40 s — bursts beyond `slots × 75 s / latency` will hit client timeouts. The real fix at scale is async jobs (ADR-3).
 - *Is health being fast actually useful if generation is queued?* It is: the client uses health to decide "backend down" vs "slow"; a false "down" is worse UX than a slow spinner.
 
-**Deadline (bullet 2)**
+**Bounded wait (bullet 2)**
 - *You can't kill a Python thread — so what happens to the abandoned call?* It runs to completion in the pool; the pool is 2 × the limit; the call can't write (invariant + test). Real SDK timeouts are still needed.
 - *Does the user still get billed?* Possibly — abandoned calls may complete at the provider. Measure with the real provider.
 

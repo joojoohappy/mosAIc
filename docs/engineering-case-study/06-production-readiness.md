@@ -33,7 +33,7 @@ Passing local tests is not treated as evidence of readiness; each row below name
 ## What is genuinely production-grade already
 
 - The provenance contract and its enforcement on both sides.
-- The trust boundaries (prompt confidentiality, content sniffing, id validation).
+- The trust boundaries (prompt confidentiality, magic-byte header checks, id validation).
 - The client's failure classification and the "never auto-retry generation" rule.
 
 These are the parts worth showing; the rest is honest scaffolding.

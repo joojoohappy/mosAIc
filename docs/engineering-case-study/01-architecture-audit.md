@@ -122,8 +122,8 @@ Request path for the core journey (Discover → Recipe → Create → Result):
 
 ## 7. Where the real technical complexity is
 
-1. **Truthful-result pipeline** (`generation.py`): three modes, provenance sidecars validated by content, a failure model where any provider error degrades instead of raising, and write-ordering that makes an abandoned provider thread harmless. Small (200 lines) but dense with deliberate invariants, each pinned by a test.
-2. **Trust boundaries**: prompt confidentiality via allowlist, content sniffing at two boundaries, path-traversal-safe result ids, `sourceNote` verbatim rendering enforced by a client-side type guard.
+1. **Truthful-result pipeline** (`generation.py`): three modes, provenance sidecars checked for completeness and consistency (all fields present, image path inside `fallback/`, image header is a real JPEG/PNG/WebP signature), a failure model where any provider error degrades instead of raising, and write-ordering that makes an abandoned provider thread harmless. Small (200 lines) but dense with deliberate invariants, each pinned by a test.
+2. **Trust boundaries**: prompt confidentiality via allowlist, magic-byte (file-header) checks at two boundaries, path-traversal-safe result ids, `sourceNote` verbatim rendering enforced by a client-side type guard.
 3. **Client resilience** (`client.ts`): per-request timeouts, health probe to classify failures, no retry for a non-idempotent call, runtime validation of every payload.
 
 Everything else (gallery, detail pages, favorites in `localStorage`) is ordinary product UI.

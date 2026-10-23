@@ -13,7 +13,7 @@ Only capabilities that exist in the code are assessed. Categories: **A** strong 
 ### H1. Server-authored provenance for AI output (live / cached / mock) — **A**
 
 - **Problem**: an AI demo that silently shows a pre-made image as "your result" is misleading; the project's product principle forbids it.
-- **Why meaningful**: provenance is decided in one place (`run_generation`), written by the server (`_source_note`), validated by content (sidecar must parse, have 5 provenance fields, point inside `fallback/`, and *be an image*), and the client refuses inconsistent payloads (`isGenerationResult`: `mock` must have `imageUrl === null`).
+- **Why meaningful**: provenance is decided in one place (`run_generation`), written by the server (`_source_note`), checked for consistency (sidecar must parse, have 5 provenance fields, point inside `fallback/`, and the file must start with an image signature — a header check, not proof the file decodes or that the provenance claim is true), and the client refuses inconsistent payloads (`isGenerationResult`: `mock` must have `imageUrl === null`).
 - **Alternatives**: client-side labels; a single boolean `isLive`; trusting sidecar existence.
 - **Trade-offs**: more fields on the wire; every fallback asset needs a sidecar; copying the asset per result costs disk (S5) but keeps old results truthful if the asset changes.
 - **Measurement**: 20 unit tests across `Modes` (6), `Disclosure` (4), `SidecarValidation` (10); 1 client test. Re-run: all pass.
@@ -35,7 +35,7 @@ Only capabilities that exist in the code are assessed. Categories: **A** strong 
 ### H4. Concurrency model for a slow external model call — **B → A after this study**
 
 - Original: sync routes in Starlette's thread pool. Correct for one request; **measured cliff at 40 in-flight generations** (health 2–3 ms → ~4.8 s).
-- After this study: a dedicated capacity limiter for generation, `async` health, a hard provider deadline, and request-size enforcement before body parsing, each with before/after numbers.
+- After this study: a dedicated capacity limiter for generation, `async` health, a bounded response time for provider calls (fallback at the deadline), and request-size enforcement before body parsing, each with before/after numbers.
 - **Roles**: ML Infrastructure, AI Platform — this is the most relevant item for infra roles because it is exactly the problem of serving a slow, rate-limited model behind an API.
 
 ### H5. Testing discipline — **B+**

@@ -26,7 +26,7 @@ The brief described an "AI system" and listed things to benchmark (GPU, tokens, 
 | Claim in code | Experiment | Result |
 |---|---|---|
 | "health stays responsive while a generation is in flight" | S2: N slow generations, then one health probe | True up to 39; at 40 the probe waited ~4.8 s. 40 = AnyIO's default thread-pool size. The claim was verified by the authors with **one** 8 s generation — correct, but one is not many. |
-| "checked before the upload is read … no reason to pull 8MB off the wire" | S3: 9–256 MB uploads to a not-ready recipe | The server received all 268 MB before answering 403. FastAPI parses the multipart body *before* the route function runs, so "before the upload is read" is impossible inside the route. |
+| "checked before the upload is read … no reason to pull 8MB off the wire" | S3: 9–256 MB uploads to a not-ready recipe | The client sent all 268 MB and the server parsed it before answering 403. FastAPI parses the multipart body *before* the route function runs, so "before the upload is read" is impossible inside the route. |
 | "Must honour: a hard deadline" | S4: provider that never returns | Nothing enforced it; the request stayed open until the client gave up. |
 
 Pattern worth remembering: **frameworks do work before your code runs** (body parsing, dependency resolution, thread-pool scheduling). Comments describe what the author's code does; benchmarks reveal what the framework does around it.

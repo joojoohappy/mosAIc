@@ -4,6 +4,8 @@ An evidence-based audit, benchmark and reliability-hardening pass over `joojooha
 
 **Bottom line**: a well-reasoned *serving shell* for an AI image service (provenance-first result pipeline, solid trust boundaries, failure-aware client) whose AI provider is not implemented yet. Classified as a **Validated Prototype**. Three reliability defects that would surface as soon as a real model is attached were measured and fixed.
 
+**Start here → [CASE-STUDY.md](CASE-STUDY.md)** (one page, for reviewers). The documents below are the supporting evidence.
+
 ## Documents
 
 | # | Document | What it answers |

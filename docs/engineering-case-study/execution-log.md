@@ -28,6 +28,9 @@ Chronological record of what was actually done, 2026-10-23 (Asia/Taipei). "Evide
 | 22 | Wrote documents 01–10, README | — | this folder |
 | 23 | Cross-checked every number in 04/05/08/09 against `summary.md` | see bottom of [04](04-benchmark-results.md) | — |
 
+| 24 | External review (ChatGPT) of the ZIP | Corrected: S3 metric is curl `size_upload` = bytes the **client sent** (was mislabelled "received" in the chart, 05, 08, 09); provider deadline reworded as bounded response time with fallback (the call is not cancelled); magic-byte check described as a header check, sidecars as consistency checks. Added one-page `CASE-STUDY.md` | follow-up commit |
+| 25 | Opened PR so `ci.yml` runs | see PR checks | GitHub |
+
 ## Final regression status (final code)
 
 | Suite | Result |

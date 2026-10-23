@@ -66,7 +66,9 @@ Two kinds of records below. **ADR-1…6** reconstruct decisions the original aut
 - **Measurements**: see [04](04-benchmark-results.md) S2 — health latency at 40/60 in flight drops back to the no-load level; generation throughput is now capped by the limiter (8 by default), which is the intended trade-off.
 - **Remaining limitations**: queued generations wait inside the request; with limiter = 8 and a 5 s provider, the 60th request waits ~37 s, so bursts above *limiter × 75 s / provider latency* will hit client timeouts. The right value is a function of the provider's rate limit, which is unknown — hence an env var, not a constant.
 
-## ADR-8 · Enforce the provider deadline in the pipeline, not in each SDK call  *(this study)*
+## ADR-8 · Bound the caller's wait for the provider in the pipeline, not in each SDK call  *(this study)*
+
+Scope: this bounds response time and returns a fallback. It does **not** cancel provider work already started.
 
 - **Problem**: S4 baseline — a hung provider holds the request until the caller aborts; nothing returns a result.
 - **Alternatives**: rely on the future SDK's timeout (unknown, may not cover all phases: connect, upload, generation, download); `signal.alarm` (main thread only); asyncio timeout (provider is sync).
@@ -76,7 +78,7 @@ Two kinds of records below. **ADR-1…6** reconstruct decisions the original aut
 
 ## ADR-9 · Reject oversized uploads at the ASGI layer  *(this study)*
 
-- **Problem**: S3 baseline — 256 MB uploads were fully received and spooled before the 400/403.
+- **Problem**: S3 baseline — 256 MB uploads were fully sent by the client and parsed/spooled by the server before the 400/403.
 - **Alternatives**: reverse-proxy `client_max_body_size` (correct in production; no proxy exists yet); checking `Content-Length` inside the route (too late — FastAPI parses the form before the route body runs).
 - **Decision**: a ~60-line pure-ASGI middleware on `POST /api/generate`: reject a declared `Content-Length` > 8 MiB + 64 KiB without reading; count streamed bytes for chunked bodies and stop at the limit. Same `400 {"error":"too_large"}` contract.
 - **Trade-offs**: (a) an oversized upload to a *not-ready* recipe now answers `too_large` instead of `recipe_not_ready` (precedence change, documented); (b) when the server answers before reading the body, curl and Chromium read the 400, but Node's undici and Python's urllib surfaced a connection reset instead — acceptable because the web client validates size before sending.

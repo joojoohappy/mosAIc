@@ -49,8 +49,8 @@ One `GET /api/health` probe issued while N generations are in flight. Median of 
 
 ![S3](../../benchmarks/charts/s3-upload-guard.png)
 
-- Baseline received the **entire** body every time, including for recipes that were not even runnable. On loopback 256 MB costs ~0.7 s; on a 10 Mbit/s uplink the same request would occupy the connection for minutes. Server RSS stayed ≤ 65 MB because Starlette spools to disk — the cost is bandwidth, disk and a parser busy on garbage.
-- After: rejection within ~1 ms after at most ~1.8 MB (socket buffers already in flight). In-limit uploads (1 MB, 8 MB) are unchanged.
+- Baseline: the client sent the **entire** body every time (and the server had to read all of it, because the route only runs after multipart parsing), including for recipes that were not even runnable. On loopback 256 MB costs ~0.7 s; on a 10 Mbit/s uplink the same request would occupy the connection for minutes. Server RSS stayed ≤ 65 MB because Starlette spools to disk — the cost is bandwidth, disk and a parser busy on garbage.
+- After: rejection within ~1 ms; the client had sent at most ~1.8 MB when the 400 arrived. This is curl's `size_upload` — bytes **the client sent**, not an exact count of bytes the server read (the server reads less: it rejects on the declared `Content-Length` before reading the body; the rest is socket buffering). In-limit uploads (1 MB, 8 MB) are unchanged.
 - Behaviour change: oversized + not-ready now returns `400 too_large` instead of `403 recipe_not_ready`.
 - Client compatibility probe (not in the table): Chromium `fetch` and curl read the early 400 body for 9, 64 and 256 MB; Node's undici and Python's urllib reported a connection reset.
 

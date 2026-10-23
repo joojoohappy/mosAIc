@@ -44,7 +44,8 @@ FALLBACK_DIR = STORAGE / "fallback"
 RESULTS_DIR = STORAGE / "results"
 
 MAX_BYTES = 8 * 1024 * 1024
-# Hard deadline for one provider call. docs/architecture/api-contract.md promises a
+# Bounded wait for one provider call: after this the caller gets a fallback. The call
+# itself is NOT cancelled (a started thread cannot be stopped). docs/architecture/api-contract.md promises a
 # result within 60 s and the client/proxy give up at 75 s; without this the request
 # simply hung until the client aborted (benchmarks scenario S4). Tighten it from
 # pregen's measured durationSec once a provider exists.
