@@ -101,7 +101,7 @@ The improvements are reliability-under-load improvements, not speed-ups: health 
 
 ## 14. Known limitations
 
-No model; frontend not built or tested in this study (package registry unavailable); Docker and CI not executed; FastAPI ran from source (0.160.0) because PyPI was unavailable — the authors' exact versions are unknown and unpinned; all numbers are from a 2-vCPU sandbox on loopback.
+No model; frontend verified only by CI typecheck and build (no E2E tests); Docker not executed; FastAPI ran from source (0.160.0) because PyPI was unavailable — the authors' exact versions are unknown and unpinned; all numbers are from a 2-vCPU sandbox on loopback.
 
 ## 15. Lessons learned
 

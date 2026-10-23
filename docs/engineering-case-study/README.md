@@ -31,11 +31,11 @@ An evidence-based audit, benchmark and reliability-hardening pass over `joojooha
 | `apps/backend/tests/test_generation.py` | +3 tests (`ProviderDeadline`) |
 | `apps/backend/tests/test_api.sh` | bounded start-up wait; +3 oversize checks that assert the error body |
 | `apps/backend/.env.example` | documents `MOSAIC_PROVIDER_TIMEOUT_S`, `MOSAIC_MAX_CONCURRENT_GENERATIONS` |
-| `.github/workflows/ci.yml` | CI for all existing checks — **not yet executed** |
+| `.github/workflows/ci.yml` | CI for all existing checks — [first run green](https://github.com/joojoohappy/mosAIc/actions/runs/39916292304) on [PR #4](https://github.com/joojoohappy/mosAIc/pull/4) |
 
 ## What was not done (and why)
 
 - No model/provider benchmarks: there is no model in the repository.
-- No frontend build, typecheck or E2E: the package registry was unreachable from both available environments.
+- No frontend E2E tests. Web typecheck and production build were not run locally (package registry unreachable), but pass in CI.
 - No Docker run: no Docker daemon available.
-- No push, deploy or paid API call.
+- No deploy, no merge to `main`, no paid API call.

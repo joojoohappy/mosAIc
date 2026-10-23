@@ -6,7 +6,7 @@
 |---|---|
 | Baseline | `c76a78a` (main) |
 | After | branch `case-study/engineering-audit` |
-| Pull request / CI | see the PR for this branch on GitHub |
+| Pull request / CI | [PR #4](https://github.com/joojoohappy/mosAIc/pull/4) · [CI run, all green](https://github.com/joojoohappy/mosAIc/actions/runs/39916292304): backend unit + HTTP smoke, web typecheck, client + real-HTTP wire tests, Next.js production build |
 | Status | Validated prototype. **No AI model is integrated yet** (`_call_provider` raises `NotImplementedError`). |
 
 ## Context
@@ -41,7 +41,7 @@ flowchart LR
 ## What this does not show
 
 - No model latency, cost or output quality: there is no model yet.
-- The frontend build and Docker images were not re-verified (the package registry was unreachable from the study environment).
+- Docker images were not run. The frontend is verified only by CI typecheck and production build; there are no frontend E2E tests.
 - Magic-byte checks confirm a file's header, not that it decodes; provenance sidecars are checked for consistency, which does not prove where an image came from.
 
 **Next:** integrate a real image provider and measure p50/p95/p99 latency, timeout rate, failure rate and cost per successful generation; add structured logs and rate limiting.

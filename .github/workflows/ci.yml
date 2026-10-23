@@ -1,6 +1,5 @@
 # Runs every check that already exists in the repo, on every push and PR.
-# NOTE: written during the engineering case study but NOT yet executed on GitHub
-# (the session had no permission to push). Verify the first run before relying on it.
+# First run: https://github.com/joojoohappy/mosAIc/actions/runs/39916292304 (PR #4, all steps green).
 name: ci
 
 on:

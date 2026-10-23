@@ -24,12 +24,11 @@ Chronological record of what was actually done, 2026-10-23 (Asia/Taipei). "Evide
 | 18 | Collapsed `MOSAIC_PROVIDER_WORKERS` into the single generation limit (pool = 2 × limit) after S2 with limit 40 showed the provider pool silently capping at 8 | Regression re-run: all pass | `generation.py` |
 | 19 | Re-ran all "after" scenarios on the final code; re-ran baseline S1 with `--src` = `git archive c76a78a` for a same-session comparison | — | `benchmarks/results/{baseline,after,after-limit40}.json` |
 | 20 | Generated tables and charts | — | `benchmarks/results/summary.md`, `benchmarks/charts/` |
-| 21 | Added `.github/workflows/ci.yml` | **Not executed** (no push permission in session) | file |
+| 21 | Added `.github/workflows/ci.yml` | Executed later, see #25 | file |
 | 22 | Wrote documents 01–10, README | — | this folder |
 | 23 | Cross-checked every number in 04/05/08/09 against `summary.md` | see bottom of [04](04-benchmark-results.md) | — |
-
 | 24 | External review (ChatGPT) of the ZIP | Corrected: S3 metric is curl `size_upload` = bytes the **client sent** (was mislabelled "received" in the chart, 05, 08, 09); provider deadline reworded as bounded response time with fallback (the call is not cancelled); magic-byte check described as a header check, sidecars as consistency checks. Added one-page `CASE-STUDY.md` | follow-up commit |
-| 25 | Opened PR so `ci.yml` runs | see PR checks | GitHub |
+| 25 | Pushed branch, opened [PR #4](https://github.com/joojoohappy/mosAIc/pull/4); first CI run | **All steps green** in GitHub Actions: backend unit tests, HTTP smoke test, `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm test`, `pnpm build` | [run](https://github.com/joojoohappy/mosAIc/actions/runs/39916292304) |
 
 ## Final regression status (final code)
 
@@ -39,5 +38,5 @@ Chronological record of what was actually done, 2026-10-23 (Asia/Taipei). "Evide
 | HTTP smoke test | 20/20 (17 original + 3 new) |
 | Client unit tests | 9/9 |
 | Real-HTTP wire tests | 5/5 |
-| Web typecheck / build | not run (registry blocked) |
-| CI | not run |
+| Web typecheck / build | not run locally; **pass in CI** |
+| CI | [green](https://github.com/joojoohappy/mosAIc/actions/runs/39916292304) |

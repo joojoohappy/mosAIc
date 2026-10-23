@@ -20,7 +20,7 @@ Passing local tests is not treated as evidence of readiness; each row below name
 | **Operational complexity** | 🟢 low | Two processes, files on disk | Stays low until multi-instance (then: shared storage, ADR-4) |
 | **Performance** | 🟢 for current scope | Non-generation endpoints p50 1.1–1.9 ms at concurrency 1 on 2 vCPU (S1); cold start ~0.4 s (S6) | Measurements with a real provider; frontend web-vitals (not measured) |
 | **Cost predictability** | ❌ Unknown | No provider → no unit cost | Cost per generation from `pregen` runs; per-IP/global generation caps (the new limiter bounds concurrency, not spend) |
-| **Test coverage** | 🟡 | Backend: 39 unit + 20 contract checks; client: 9 + 5 wire. Frontend: none in repo | CI on every PR (workflow added, **never executed**); frontend E2E for the core journey; coverage report |
+| **Test coverage** | 🟡 | Backend: 39 unit + 20 contract checks; client: 9 + 5 wire. Frontend: none in repo | CI on every PR (workflow added; [first run green](https://github.com/joojoohappy/mosAIc/actions/runs/39916292304)); frontend E2E for the core journey; coverage report |
 
 ## Blocking issues before any public deployment
 

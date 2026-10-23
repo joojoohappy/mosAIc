@@ -10,7 +10,7 @@ Full diff: `git diff c76a78a -- apps/backend .github`.
 | I2 | Bounded provider response time (fallback at a deadline) | `generation.py`; +3 tests | ~25 + 42 test |
 | I3 | Upload size limit before multipart parsing | `main.py`; +3 smoke checks | ~60 + 8 test |
 | I4 | Bounded start-up wait in the smoke test | `test_api.sh` | ~9 |
-| I5 | CI workflow | `.github/workflows/ci.yml` | 45 (**unexecuted**) |
+| I5 | CI workflow | `.github/workflows/ci.yml` | 45 (first run green) |
 | I6 | Document new env knobs | `.env.example` | 6 |
 
 ---
@@ -62,9 +62,9 @@ Wording note: this bounds how long the *caller* waits. It does not stop the prov
 - **Change**: 15 s bounded loop that also detects the server process exiting; mirrors `scripts/dev.sh`.
 - **Verification**: script passes (20/20). The hang case was reproduced before the fix, not re-reproduced after (the failure condition was removed from the environment).
 
-## I5 — CI workflow (unexecuted)
+## I5 — CI workflow
 
-`.github/workflows/ci.yml` runs: backend unit tests, the HTTP smoke test, `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm test` (client + wire), `pnpm build`. **It has never run.** First run may need adjustments (e.g. pnpm 11 via `packageManager`, Node 24).
+`.github/workflows/ci.yml` runs: backend unit tests, the HTTP smoke test, `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm test` (client + wire), `pnpm build`. First run on PR #4: all steps green (https://github.com/joojoohappy/mosAIc/actions/runs/39916292304). This was the first time the web typecheck and production build ran in this study.
 
 ## Considered and not implemented
 

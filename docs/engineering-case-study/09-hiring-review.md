@@ -31,7 +31,7 @@ Evidence behind the scores:
 - **Complexity**: ~330 lines of backend logic and ~200 of client logic. The ideas are good; the scale is small. Complexity rises to 3 for infra roles only because of the concurrency analysis.
 - **Ownership**: limited by authorship (§0). The study's fixes are a real, attributable contribution.
 - **Measurable outcomes**: before/after numbers exist for three reliability properties (S2–S4), reproducible from `benchmarks/`. No model metrics exist, so AI/ML roles score low.
-- **Maturity**: no provider, no deployment, no observability, CI never run — 2 everywhere.
+- **Maturity**: no provider, no deployment, no observability, CI only one run old — 2 everywhere.
 - **Differentiation**: the provenance contract ("never present a cached image as yours", server-authored disclosure, consistency-checked provenance sidecars) is unusual and makes a memorable story for Solutions and AI-product roles. Generic CRUD + Next.js scores 2 for SWE.
 
 ## 2. Resume bullets (only verified numbers)
@@ -68,12 +68,12 @@ Bullets 1–3 describe work done in this study; keep them only if you can explai
 **Questions you must be ready to answer honestly**
 - "What model did you use and what was its latency/cost?" → None yet; the provider is unimplemented. Explain why that was the right call for the project's honesty rule, and what you would measure first.
 - "Did you write the backend?" → §0.
-- "Has this run in production or CI?" → No.
+- "Has this run in production or CI?" → Not in production. CI: yes, green on PR #4.
 
 ## 4. Weaknesses
 
 - **Overclaims to avoid**: "AI pipeline", "model serving", any model metric, "production", the original docstring's "health stays responsive" as an unconditional property.
-- **Engineering gaps**: no provider; frontend unverified here and without tests; no CI history; unpinned Python deps; no logs/metrics; no rate limiting; unbounded result storage; Docker is `next dev`.
+- **Engineering gaps**: no provider; frontend unverified here and without tests; a CI history of a single run; unpinned Python deps; no logs/metrics; no rate limiting; unbounded result storage; Docker is `next dev`.
 - **Not yet impressive**: S1 throughput numbers (loopback, 2 vCPU, no model); the monorepo structure; the UI.
 
 ## 5. Final verdict
@@ -85,7 +85,7 @@ What is missing, precisely:
 1. **A real provider integration** with measured latency distribution (p50/p95/p99 over ≥100 calls), failure rate, timeout rate, and **cost per successful generation**.
 2. **A simple output-validity / quality check** (e.g., format/aspect-ratio compliance with the recipe, refusal rate) — the first AI-specific evaluation.
 3. **A deployed instance** (even a small VM) with structured logs (request id, mode, fallback reason, provider latency) and one dashboard.
-4. **CI that has run green**, plus one browser E2E test of Discover → Create → Result.
+4. ~~CI that has run green~~ (done: PR #4), plus one browser E2E test of Discover → Create → Result.
 5. **Unambiguous personal ownership** of at least one of the above.
 
 Items 1–2 turn it from "serving shell" into an AI system; 3–4 turn "validated prototype" into "production-oriented". With those, re-score: AI Platform/Infra would move to ~24/30.

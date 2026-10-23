@@ -28,7 +28,7 @@ MOSAIC ("mosAIc") is a web app that collects image-generation prompts ("recipes"
 | `apps/mobile/` | 0 code | `.gitkeep` placeholders for a future Expo app | **Planned** |
 | `content/recipes/` | README only | Reserved | **Planned** |
 | `docker-compose.yml`, two `Dockerfile`s | — | "Verification-only" images; web runs `next dev` | **Implemented, not verified** (no Docker daemon in audit environment) |
-| CI | — | none | **Missing** (one added by this study — unexecuted) |
+| CI | — | none | **Missing at baseline** (added by this study; first run green on PR #4) |
 
 ## 3. Architecture as implemented
 
@@ -115,9 +115,10 @@ Request path for the core journey (Discover → Recipe → Create → Result):
 | API client error mapping, timeouts, response guards | **Verified** | 9/9 tests re-run here |
 | AI provider integration | **Missing** | `NotImplementedError` |
 | Pre-generation (`pregen.py`) / cached fallback assets | **Partial** — code exists, cannot run | depends on provider |
-| Web frontend (Next.js) | **Implemented but unverified in this audit** | Next.js could not be installed (package registry blocked in the audit sandbox). The repo's [`docs/architecture/validation.md`](../architecture/validation.md) reports a passing build/typecheck on Windows ARM64 on 2026-09-28; that claim is **reported, not re-verified**. |
+| Web frontend (Next.js) | **Builds and typechecks (CI); behaviour untested** | Not runnable in the audit sandbox (package registry blocked). Later verified by the [first CI run](https://github.com/joojoohappy/mosAIc/actions/runs/39916292304): `pnpm typecheck` and `next build` pass on ubuntu-latest / Node 24. No component or E2E tests exist. |
 | Docker / compose | **Implemented but unverified** | No Docker daemon in the audit sandbox; web image is explicitly `next dev`, not production |
-| Deployment, observability, CI | **Missing** | — |
+| Deployment, observability | **Missing** | — |
+| CI | **Added by this study; first run green** | `.github/workflows/ci.yml` |
 | Mobile app, editorial content, accounts, remix lineage | **Planned / described only** | READMEs and About page copy |
 
 ## 7. Where the real technical complexity is

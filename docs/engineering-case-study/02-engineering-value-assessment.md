@@ -41,7 +41,7 @@ Only capabilities that exist in the code are assessed. Categories: **A** strong 
 ### H5. Testing discipline — **B+**
 
 - 36 unit tests with filesystem isolation, a 17-check HTTP contract test, a real-wire integration test that spins up an isolated backend copy. Tests encode *product invariants* ("fallback never claims the user's photo"), not just functions.
-- Gaps: no CI (so nothing enforces them), no frontend component/E2E tests, smoke test mutates real data (F8).
+- Gaps: no CI at baseline (added by this study, first run green on PR #4), no frontend component/E2E tests, smoke test mutates real data (F8).
 
 ### H6. Monorepo with shared contracts (`packages/types`, `api`, `core`) — **C+**
 
@@ -72,5 +72,5 @@ Only capabilities that exist in the code are assessed. Categories: **A** strong 
 | AI Engineer | H1, H2 | no model integration, no eval |
 | ML Engineer | — | no training, no inference, no data |
 | ML Infra / AI Platform | H4 (+ this study's measurements), H3 | no real provider, no deployment, no observability |
-| Software Engineer | H2, H3, H5, H4 | frontend unverified, no CI history |
+| Software Engineer | H2, H3, H5, H4 | frontend has no behavioural tests (only CI typecheck/build) |
 | Solutions Engineer / Architect | H1, H2, the written contracts and ADR-style docstrings | no customer-facing deployment |
