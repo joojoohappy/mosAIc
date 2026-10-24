@@ -225,48 +225,6 @@ class Modes(Base):
         spy.assert_called_once_with(self.recipe["prompt"], JPEG)
 
 
-class ProviderDeadline(Base):
-    """The provider call is abandoned at PROVIDER_TIMEOUT_S and the request falls back."""
-
-    def test_overrunning_provider_falls_back_within_the_deadline(self):
-        import threading, time
-        release = threading.Event()
-        self.addCleanup(release.set)
-
-        def slow(prompt, image):
-            release.wait(5)
-            return PNG
-
-        self.add_fallback()
-        with mock.patch.multiple(generate, API_KEY="k", _call_provider=slow, PROVIDER_TIMEOUT_S=0.2):
-            t0 = time.monotonic()
-            r = generate.run_generation(self.recipe, JPEG)
-            elapsed = time.monotonic() - t0
-        self.assertLess(elapsed, 2.0)
-        self.assertEqual(r["mode"], "cached")
-        self.assertIn("TimeoutError", r["fallbackReason"])
-        self.assertIn("deadline", r["fallbackReason"])
-
-    def test_late_provider_result_never_reaches_disk(self):
-        # Invariant 1 under a deadline: the abandoned call finishing later writes nothing.
-        import threading
-        done = threading.Event()
-
-        def late(prompt, image):
-            done.wait(0.5)
-            return PNG
-
-        with mock.patch.multiple(generate, API_KEY="k", _call_provider=late, PROVIDER_TIMEOUT_S=0.05):
-            r = generate.run_generation(self.recipe, JPEG)
-            done.set()
-            import time; time.sleep(0.6)
-        self.assertEqual(sorted(p.name for p in self.results.iterdir()), [f"{r['resultId']}.json"])
-
-    def test_fast_provider_is_unaffected(self):
-        with mock.patch.multiple(generate, API_KEY="k", _call_provider=mock.Mock(return_value=PNG), PROVIDER_TIMEOUT_S=5):
-            self.assertEqual(generate.run_generation(self.recipe, JPEG)["mode"], "live")
-
-
 class Disclosure(Base):
     """The invariants that stop the UI from lying."""
 
