@@ -100,7 +100,7 @@ Abuse controls (identical baseline and after):
 
 - 6 requests with 6 different forged `X-Forwarded-For`, default 3/min → `[200, 200, 200, 429, 429, 429]`.
 - `MOSAIC_DAILY_GLOBAL=5`, 8 requests → 5 × 200, 3 × 503 `daily_budget_reached`, exactly 5 provider calls.
-- 9 MB body with `Content-Length` → 413 `too_large`. Chunked 9 MB without a length → refused, but as FastAPI's generic **400** "error parsing the body", not 413 (browsers always send a length; not fixed).
+- 9 MB body with `Content-Length` → 413 `too_large`. Chunked 9 MB without a length → on PR #2 refused as FastAPI's generic **400** "error parsing the body", not 413. Fixed in a follow-up commit (05 §5): now 413 `too_large`, pinned by `test_body_cap_rejects_chunked_upload_with_the_contract_error`.
 
 Budget race (limit 50, 300 requests from 16 threads, `MAX_CONCURRENT=2` per worker):
 

@@ -11,7 +11,8 @@ Selection criteria, in order: does it change cost or correctness for a user; is 
 | 1   | JPEG truncated to 1 % passed validation; 6/6 damaged JPEGs reached the paid call                                       | Reduced-scale decode (`draft` + `load`) for JPEG, full decode for WebP                               | 5/6 rejected with 400 before the provider; the 6th (mid-file zeros) is also accepted by a full decode | +13.7 ms p50 per 3 MP upload, +52 ms at 12 MP |
 | 2   | "60 s deadline" bounded each socket read; slow drip held a 2 s timeout for 12.63 s and stored the result as `live`     | Wall-clock deadline: call in a worker thread joined for the deadline; worker checks it between reads | 2.07 s, `provider_timeout`                                                                            | One extra thread per model call               |
 | 3   | Overlapping identical requests (refresh/second click during the model call) each paid                                  | In-process single-flight per fingerprint (`Limiter.lead/done`)                                       | 2 → 1 provider call, same `resultId`                                                                  | Waiting requests hold a thread (capped at 8)  |
-| 4   | Two processes writing the same `LocalStore` file collided on a fixed temp name: HTTP 500s, sometimes after a paid call | Unique temp name per write; Blob read errors go to `logging` instead of `print`                      | 6 → 0 HTTP 500s in 20 multi-worker trials                                                             | None measurable                               |
+| 4   | Two processes writing the same `LocalStore` file collided on a fixed temp name: HTTP 500s, sometimes after a paid call | Unique temp name per write; Blob read errors go to `logging` instead of `print`                      | 6 → 0 HTTP 500s in 5 trials × 4 workers                                                               | None measurable                               |
+| 5   | Chunked oversized body answered with FastAPI's generic `400 {"detail": ...}` instead of `413 too_large`                | Middleware answers 413 itself, then gives the app a synthetic disconnect                             | 413 `too_large` with and without `Content-Length`                                                     | None measurable                               |
 
 Plus one documentation correction: `limits.py` claimed the global budget could overshoot by at most `MAX_CONCURRENT` per instance. Measured: 73 calls against a limit of 50 with 4 workers (bound would be 58). The docstring now says what is true and why the provider-side spend cap is required.
 
@@ -64,13 +65,23 @@ The marker check is the tempting cheap answer, but phones append data after the 
 
 **Implementation.** [`storage.py`](../../apps/backend/app/storage.py): temp name `<name>.<uuid>.tmp`. Also replaced a `print` in `BlobStore.get` with `logging`, so Blob read failures appear in the same log stream as everything else.
 
-**Before → after.** HTTP 500s: 6 → 0 over 20 multi-worker trials (5 × 4 workers); provider-call overshoot remains (51–53 for a limit of 50) by decision ([ADR-10](07-architecture-decisions.md)).
+**Before → after.** HTTP 500s: 6 → 0 over 5 trials, each with 4 workers (earlier drafts called this "20 trials"); provider-call overshoot remains (51–53 for a limit of 50) by decision ([ADR-10](07-architecture-decisions.md)).
+
+## 5 · Chunked oversized bodies return the documented error (follow-up)
+
+Carried over from the earlier, now-reverted case study on the pre-v0.1 backend (PR #4), where the same middleware bug was found and fixed.
+
+**Problem.** `BodySizeLimit` raised an exception from `receive()` when a chunked body crossed the cap. FastAPI's form parsing caught it and answered `400 {"detail": "There was an error parsing the body"}`. The status was close, but the body was wrong: the web client maps the error **code** to its message, so this would show "request failed" instead of "photo must be under 8 MB". Browsers send `Content-Length`, so this mostly affects non-browser clients, but the contract should hold for every client.
+
+**Change.** When the cap is crossed, the middleware now sends `413 {"error":"too_large"}` itself, hands the app a synthetic `http.disconnect`, and drops anything the app tries to send afterwards.
+
+**Evidence.** The new unit test `ApiLimits.test_body_cap_rejects_chunked_upload_with_the_contract_error` failed before the change (`(400, {'detail': ...})`) and passes after. Against a real uvicorn server, a 20 MB upload returned `413 too_large` both with `Content-Length` and with `Transfer-Encoding: chunked`. The HTTP smoke test still passes 18/18.
 
 ## Regression check
 
 | Check                         | Before             | After                              |
 | ----------------------------- | ------------------ | ---------------------------------- |
-| Backend unit tests            | 73 pass            | 84 pass                            |
+| Backend unit tests            | 73 pass            | 84 pass (85 with follow-up §5)     |
 | HTTP contract (`test_api.sh`) | 18/18              | 18/18                              |
 | Node client/upload/proxy      | 19/19              | 19/19                              |
 | Production build              | pass               | pass                               |
@@ -87,7 +98,6 @@ The marker check is the tempting cheap answer, but phones append data after the 
 | Profile/speed up FastAPI response encoding for recipe/result reads | ~1 ms CPU per read at saturation                                                                  | No user-visible need at this traffic; Blob latency will dominate on Vercel                                                                 |
 | Cross-process atomic budget (file lock, Redis)                     | 51–53 calls vs 50 with 4 local workers                                                            | File lock does not help on Vercel+Blob; Redis is new infrastructure for a $54/month ceiling; provider spend cap is the real guard (ADR-10) |
 | Reduce per-request memory (stream base64 into the request body)    | ~30–44 MB per in-flight 7.6 MB upload                                                             | Bounded by `MAX_CONCURRENT=2` (~140 MB); real uploads on Vercel are ≤ 4 MB                                                                 |
-| Return 413 instead of 400 for chunked oversized bodies             | Chunked 9 MB → 400                                                                                | Browsers always send `Content-Length`; body is refused either way                                                                          |
 | Retries for provider errors                                        | —                                                                                                 | Each retry is a paid call; no real failure data to tune them on                                                                            |
 | Container `HEALTHCHECK`, non-root user                             | B4: neither present                                                                               | The Docker image is for local verification; production is Vercel. Worth adding if Docker becomes a deploy target                           |
 | Structured logging / metrics                                       | Logs are one plain line per generation                                                            | Valuable, but the right shape depends on where logs go on Vercel; listed in [06](06-production-readiness.md)                               |

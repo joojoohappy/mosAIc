@@ -2,7 +2,7 @@
 
 An evidence-based evaluation of MOSAIC's v0.1 release candidate (PR #2, `fbbc625`): what it implements, how it behaves under measurement, four defects found and fixed, and an honest assessment of its production readiness and portfolio value.
 
-**Read first:** [08 · Portfolio case study](08-portfolio-case-study.md) (summary for readers) and [09 · Hiring review](09-hiring-review.md) (skeptical assessment).
+**Read first:** [CASE-STUDY.md](CASE-STUDY.md) (one page, for reviewers), then [08 · Portfolio case study](08-portfolio-case-study.md) (full write-up) and [09 · Hiring review](09-hiring-review.md) (skeptical assessment).
 
 > Every figure involving image generation was measured against a **local fake model server**. No real Gemini call was made and nothing was deployed. See [03](03-benchmark-methodology.md) §5 for what the numbers do and do not show.
 
@@ -51,5 +51,6 @@ Scripts: [`benchmarks/`](../../benchmarks/) ([how to run](../../benchmarks/READM
 - [`apps/backend/app/generation.py`](../../apps/backend/app/generation.py): JPEG/WebP uploads are decoded, not just header-checked.
 - [`apps/backend/app/provider.py`](../../apps/backend/app/provider.py): wall-clock deadline for the model call.
 - [`apps/backend/app/limits.py`](../../apps/backend/app/limits.py), [`main.py`](../../apps/backend/app/main.py): overlapping identical requests share one generation; corrected budget docstring.
+- [`apps/backend/app/main.py`](../../apps/backend/app/main.py) `BodySizeLimit`: a chunked oversized body now gets `413 too_large`, not FastAPI's generic 400 (follow-up; test in `test_limits.py`).
 - [`apps/backend/app/storage.py`](../../apps/backend/app/storage.py): unique temp names for atomic local writes; Blob read errors logged via `logging`.
 - [`apps/backend/tests/test_hardening.py`](../../apps/backend/tests/test_hardening.py): 11 regression tests.

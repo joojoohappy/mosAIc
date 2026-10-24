@@ -80,7 +80,7 @@ Criteria used for every fix: does it change money or correctness for a user; is 
 | Budget overshoot is bounded by concurrency                  | Lost updates are cumulative; 73 vs 50 observed                                                                                                       |
 | The Python load client is fast enough for a local benchmark | ~9× higher latency than k6 on the same server                                                                                                        |
 | `docker build` will just work                               | The sandbox's TLS proxy needed its CA inside the build; later Docker Hub rate-limited base-image lookups, so build times could only be measured once |
-| A chunked oversized body returns 413                        | It returns FastAPI's 400 (still refused)                                                                                                             |
+| A chunked oversized body returns 413                        | It returned FastAPI's 400 (still refused); fixed in a follow-up                                                                                      |
 
 ## 8. Improvements that were not worth implementing
 

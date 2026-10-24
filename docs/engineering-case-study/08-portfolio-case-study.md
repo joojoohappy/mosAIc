@@ -15,7 +15,7 @@ A measurement pass then tested those guarantees with a reproducible harness (loc
 | Provider "60 s timeout" was per socket read | 2 s setting held for **12.6 s** by a slow upstream | **2.07 s**                                              |
 | Overlapping duplicate requests              | **2** paid calls                                   | **1**                                                   |
 | Truncated JPEGs reaching the paid model     | **6 / 6** damaged files                            | **1 / 6** (the remaining one also passes a full decode) |
-| Multi-process temp-file collision           | **6** HTTP 500s in 20 trials                       | **0**                                                   |
+| Multi-process temp-file collision           | **6** HTTP 500s in 5 trials                        | **0**                                                   |
 
 One fix costs latency (+13.7 ms per 3 MP upload) and was kept deliberately. One known weakness, a budget counter that is approximate across processes, was measured and _not_ fixed, with the reasoning recorded.
 

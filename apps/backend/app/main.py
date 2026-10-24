@@ -56,25 +56,34 @@ class BodySizeLimit:
         if declared > self.limit:
             return await _too_large(send)
 
-        seen = 0
+        seen, started, rejected = 0, False, False
 
         async def limited_receive():
-            nonlocal seen
+            nonlocal seen, rejected
+            if rejected:
+                return {"type": "http.disconnect"}
             message = await receive()
             if message["type"] == "http.request":
                 seen += len(message.get("body", b""))
                 if seen > self.limit:
-                    raise _BodyTooLarge
+                    # Answer now, then tell the app the client went away. Raising
+                    # here instead would be caught by FastAPI's form parsing and
+                    # turned into a generic 400 "error parsing the body", which the
+                    # web client cannot map to too_large.
+                    rejected = True
+                    if not started:
+                        await _too_large(send)
+                    return {"type": "http.disconnect"}
             return message
 
-        try:
-            await self.app(scope, limited_receive, send)
-        except _BodyTooLarge:
-            await _too_large(send)
+        async def guarded_send(message):
+            nonlocal started
+            if rejected:
+                return  # our 413 already went out; drop whatever the app sends
+            started = started or message["type"] == "http.response.start"
+            await send(message)
 
-
-class _BodyTooLarge(Exception):
-    pass
+        await self.app(scope, limited_receive, guarded_send)
 
 
 async def _too_large(send):
