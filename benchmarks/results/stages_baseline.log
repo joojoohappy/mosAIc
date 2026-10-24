@@ -1,0 +1,10 @@
+0.3MP  validate_upload      median=   0.027ms p95=   0.034ms
+0.3MP  fingerprint_sha256   median=   0.332ms p95=   0.447ms
+0.3MP  build_request_json   median=   0.630ms p95=   1.109ms
+3MP    validate_upload      median=   0.029ms p95=   0.049ms
+3MP    fingerprint_sha256   median=   3.630ms p95=   5.544ms
+3MP    build_request_json   median=   6.394ms p95=   9.891ms
+12MP   validate_upload      median=   0.028ms p95=   0.045ms
+12MP   fingerprint_sha256   median=  13.324ms p95=  17.658ms
+12MP   build_request_json   median=  23.197ms p95=  29.308ms
+-      load_recipes         median=   0.048ms p95=   0.078ms

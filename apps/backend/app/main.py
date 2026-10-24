@@ -56,25 +56,34 @@ class BodySizeLimit:
         if declared > self.limit:
             return await _too_large(send)
 
-        seen = 0
+        seen, started, rejected = 0, False, False
 
         async def limited_receive():
-            nonlocal seen
+            nonlocal seen, rejected
+            if rejected:
+                return {"type": "http.disconnect"}
             message = await receive()
             if message["type"] == "http.request":
                 seen += len(message.get("body", b""))
                 if seen > self.limit:
-                    raise _BodyTooLarge
+                    # Answer now, then tell the app the client went away. Raising
+                    # here instead would be caught by FastAPI's form parsing and
+                    # turned into a generic 400 "error parsing the body", which the
+                    # web client cannot map to too_large.
+                    rejected = True
+                    if not started:
+                        await _too_large(send)
+                    return {"type": "http.disconnect"}
             return message
 
-        try:
-            await self.app(scope, limited_receive, send)
-        except _BodyTooLarge:
-            await _too_large(send)
+        async def guarded_send(message):
+            nonlocal started
+            if rejected:
+                return  # our 413 already went out; drop whatever the app sends
+            started = started or message["type"] == "http.response.start"
+            await send(message)
 
-
-class _BodyTooLarge(Exception):
-    pass
+        await self.app(scope, limited_receive, guarded_send)
 
 
 async def _too_large(send):
@@ -154,8 +163,8 @@ def generate(
     if problem:
         return _err(400, problem)
 
-    # Same recipe + same photo shortly after: hand back the earlier result. A
-    # double click or a refresh mid-generation never pays twice.
+    # Same recipe + same photo within 10 minutes: hand back the earlier result.
+    # (Identical requests that are still running are handled by limiter.lead.)
     key = fingerprint(recipe["id"], data)
     earlier = limiter.recent_result(key)
     if earlier:
@@ -166,6 +175,24 @@ def generate(
     if refused:
         log.info("generate refused recipe=%s reason=%s", recipe["id"], refused)
         return _err(429, refused)
+
+    # An identical request still in flight (a refresh or second click during
+    # the 10-60 s model call): wait for it and hand back the same result.
+    role = limiter.lead(key)
+    if role == "waited":
+        earlier = limiter.recent_result(key)
+        if earlier:
+            return {"resultId": earlier}
+        # It ended without a result (busy, budget, error): answer this one on its own.
+    if role != "lead":
+        return _generate_once(recipe, data, key)
+    try:
+        return _generate_once(recipe, data, key)
+    finally:
+        limiter.done(key)
+
+
+def _generate_once(recipe: dict, data: bytes, key: str):
     if not limiter.acquire():
         return _err(503, "server_busy")
     started = time.monotonic()

@@ -12,6 +12,14 @@ Configure in apps/backend/.env (see .env.example):
 
 Contract with generation.py: return image bytes or raise. Never touch the
 filesystem, never retry. The caller validates the bytes and decides the mode.
+
+The timeout is a wall-clock deadline for the whole call. urllib's own timeout
+only bounds each socket read, so an upstream that keeps sending a byte now and
+then could hold a request (and a concurrency slot) far past it: a 2 s timeout
+took 12.6 s against a slow-drip fake (benchmarks/bench_reliability.py). The
+call therefore runs in a worker thread that the caller waits on for at most
+the deadline; the worker also checks the deadline between reads, so a stalled
+call left behind stops on its own instead of running on.
 """
 
 from __future__ import annotations
@@ -19,6 +27,8 @@ from __future__ import annotations
 import base64
 import json
 import os
+import threading
+import time
 import urllib.request
 
 NAME = "Google Gemini"
@@ -72,6 +82,19 @@ def extract_image(payload: dict) -> bytes:
     return base64.b64decode(data)
 
 
+def _post(req: urllib.request.Request, deadline: float) -> bytes:
+    with urllib.request.urlopen(req, timeout=timeout()) as resp:  # noqa: S310 - fixed https URL
+        chunks = []
+        while True:
+            if time.monotonic() > deadline:
+                raise TimeoutError("provider deadline exceeded")
+            chunk = resp.read1(64 * 1024)
+            if not chunk:
+                break
+            chunks.append(chunk)
+    return extract_image(json.loads(b"".join(chunks)))
+
+
 def generate(api_key: str, prompt: str, image: bytes, image_kind: str,
              aspect_ratio: str | None) -> bytes:
     body = json.dumps(build_request(prompt, image, image_kind, aspect_ratio))
@@ -81,5 +104,21 @@ def generate(api_key: str, prompt: str, image: bytes, image_kind: str,
         headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=timeout()) as resp:  # noqa: S310 - fixed https URL
-        return extract_image(json.loads(resp.read()))
+    limit = timeout()
+    deadline = time.monotonic() + limit
+    box: dict = {}
+
+    def work():
+        try:
+            box["image"] = _post(req, deadline)
+        except BaseException as err:  # noqa: BLE001 - re-raised in the caller below
+            box["error"] = err
+
+    worker = threading.Thread(target=work, name="mosaic-provider", daemon=True)
+    worker.start()
+    worker.join(limit)
+    if worker.is_alive():
+        raise TimeoutError(f"provider deadline of {limit:g}s exceeded")
+    if "error" in box:
+        raise box["error"]
+    return box["image"]

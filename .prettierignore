@@ -7,3 +7,6 @@ apps/backend/
 apps/mobile/
 pnpm-lock.yaml
 apps/web/next-env.d.ts
+
+# Raw benchmark output: kept byte-for-byte as the scripts wrote it.
+benchmarks/results/

@@ -1,0 +1,263 @@
+
+▶ Format + TypeScript (pnpm lint)
+$ prettier --check . && pnpm typecheck
+Checking formatting...
+[warn] benchmarks/results/api_latency_after.json
+[warn] benchmarks/results/api_latency_baseline.json
+[warn] benchmarks/results/deploy.json
+[warn] benchmarks/results/generate_after.json
+[warn] benchmarks/results/generate_baseline.json
+[warn] benchmarks/results/reliability_after.json
+[warn] benchmarks/results/reliability_baseline.json
+[warn] benchmarks/results/tables.md
+[warn] docs/engineering-case-study/01-architecture-audit.md
+[warn] docs/engineering-case-study/02-engineering-value-assessment.md
+[warn] docs/engineering-case-study/03-benchmark-methodology.md
+[warn] docs/engineering-case-study/06-production-readiness.md
+[warn] docs/engineering-case-study/07-architecture-decisions.md
+[warn] Code style issues found in 13 files. Run Prettier with --write to fix.
+[ELIFECYCLE] Command failed with exit code 1.
+
+▶ Python lint (ruff)
+All checks passed!
+
+▶ Backend unit tests
+2026-10-22 17:44:32,882 WARNING mosaic.api no recipe has tryReady=true: POST /api/generate will return 403 recipe_not_ready for all of them (apps/backend/data/recipes.json)
+..............2026-10-22 17:44:32,938 WARNING mosaic.generation provider failed recipe=seed-01 reason=provider_timeout detail=TimeoutError: deadline exceeded
+..2026-10-22 17:44:32,942 WARNING mosaic.generation provider failed recipe=seed-01 reason=provider_no_image detail=ValueError: provider returned bytes that are not an image
+............2026-10-22 17:44:32,956 WARNING mosaic.generation provider failed recipe=seed-01 reason=provider_error detail=RuntimeError: died
+....................2026-10-22 17:44:33,754 INFO mosaic.api generate recipe=seed-01 mode=live reason=None seconds=0.5
+2026-10-22 17:44:33,755 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:33,756 INFO mosaic.api generate recipe=seed-01 mode=live reason=None seconds=0.5
+2026-10-22 17:44:33,759 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+.2026-10-22 17:44:34,300 INFO mosaic.api generate recipe=seed-01 mode=live reason=None seconds=0.5
+2026-10-22 17:44:34,302 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:34,303 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:34,304 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+../usr/lib/python3.13/threading.py:999: ResourceWarning: unclosed <socket.socket fd=3, family=2, type=1, proto=0, laddr=('127.0.0.1', 37019)>
+  del self._target, self._args, self._kwargs
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.../usr/lib/python3.13/threading.py:999: ResourceWarning: unclosed <socket.socket fd=4, family=2, type=1, proto=0, laddr=('127.0.0.1', 44093)>
+  del self._target, self._args, self._kwargs
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+..2026-10-22 17:44:37,144 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 413 Content Too Large"
+.2026-10-22 17:44:37,153 INFO httpx2 HTTP Request: GET http://testserver/static/fallback/seed-01.json "HTTP/1.1 404 Not Found"
+2026-10-22 17:44:37,160 INFO httpx2 HTTP Request: GET http://testserver/static/results/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json "HTTP/1.1 404 Not Found"
+.2026-10-22 17:44:37,174 INFO mosaic.api generate recipe=seed-01 mode=live reason=None seconds=0.0
+2026-10-22 17:44:37,175 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,186 INFO mosaic.api generate recipe=seed-01 mode=live reason=None seconds=0.0
+2026-10-22 17:44:37,187 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,194 WARNING mosaic.api generate refused recipe=seed-01 reason=daily_budget_reached
+2026-10-22 17:44:37,195 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 503 Service Unavailable"
+.2026-10-22 17:44:37,208 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 400 Bad Request"
+.2026-10-22 17:44:37,301 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 413 Content Too Large"
+.2026-10-22 17:44:37,314 WARNING mosaic.generation provider failed recipe=seed-01 reason=provider_error detail=RuntimeError: secret upstream detail
+2026-10-22 17:44:37,314 INFO mosaic.api generate recipe=seed-01 mode=mock reason=provider_error seconds=0.0
+2026-10-22 17:44:37,315 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,323 INFO httpx2 HTTP Request: GET http://testserver/api/results/a358fb16a838416bb0fcfe0e3e817c08 "HTTP/1.1 200 OK"
+.2026-10-22 17:44:37,336 INFO mosaic.api generate recipe=seed-01 mode=live reason=None seconds=0.0
+2026-10-22 17:44:37,337 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,348 INFO mosaic.api generate recipe=seed-01 mode=live reason=None seconds=0.0
+2026-10-22 17:44:37,348 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,356 WARNING mosaic.api generate refused recipe=seed-01 reason=daily_budget_reached
+2026-10-22 17:44:37,357 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 503 Service Unavailable"
+2026-10-22 17:44:37,366 INFO mosaic.api generate refused recipe=seed-01 reason=rate_limited
+2026-10-22 17:44:37,366 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 429 Too Many Requests"
+2026-10-22 17:44:37,373 INFO mosaic.api generate refused recipe=seed-01 reason=rate_limited
+2026-10-22 17:44:37,373 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 429 Too Many Requests"
+.2026-10-22 17:44:37,387 INFO mosaic.api generate recipe=seed-01 mode=live reason=None seconds=0.0
+2026-10-22 17:44:37,387 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,396 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+.2026-10-22 17:44:37,410 INFO mosaic.api generate recipe=seed-01 mode=live reason=None seconds=0.0
+2026-10-22 17:44:37,411 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,423 INFO mosaic.api generate recipe=seed-01 mode=live reason=None seconds=0.0
+2026-10-22 17:44:37,424 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,432 WARNING mosaic.api generate refused recipe=seed-01 reason=daily_budget_reached
+2026-10-22 17:44:37,433 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 503 Service Unavailable"
+2026-10-22 17:44:37,441 INFO mosaic.api generate refused recipe=seed-01 reason=rate_limited
+2026-10-22 17:44:37,442 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 429 Too Many Requests"
+.2026-10-22 17:44:37,453 INFO httpx2 HTTP Request: GET http://testserver/api/health "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,461 INFO mosaic.api generate recipe=seed-01 mode=mock reason=no_shared_storage seconds=0.0
+2026-10-22 17:44:37,462 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,469 INFO httpx2 HTTP Request: GET http://testserver/api/results/102b608e044c423fa2f9ec9470cff38f "HTTP/1.1 200 OK"
+.............2026-10-22 17:44:37,498 INFO mosaic.api generate recipe=seed-01 mode=live reason=None seconds=0.0
+2026-10-22 17:44:37,499 INFO httpx2 HTTP Request: POST http://testserver/api/generate "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,506 INFO httpx2 HTTP Request: GET http://testserver/api/results/3723e8f874184913a6ee1b322006b557 "HTTP/1.1 200 OK"
+2026-10-22 17:44:37,514 INFO httpx2 HTTP Request: GET http://testserver/static/results/3723e8f874184913a6ee1b322006b557.png "HTTP/1.1 200 OK"
+.2026-10-22 17:44:37,522 INFO httpx2 HTTP Request: GET http://testserver/app/main.py "HTTP/1.1 404 Not Found"
+2026-10-22 17:44:37,529 INFO httpx2 HTTP Request: GET http://testserver/static/results/x.png "HTTP/1.1 404 Not Found"
+2026-10-22 17:44:37,535 INFO httpx2 HTTP Request: GET http://testserver/static/results/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json "HTTP/1.1 404 Not Found"
+2026-10-22 17:44:37,543 INFO httpx2 HTTP Request: GET http://testserver/static/results/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.gif "HTTP/1.1 404 Not Found"
+.....
+----------------------------------------------------------------------
+Ran 84 tests in 4.686s
+
+OK
+
+▶ API status codes (test_api.sh)
+smoke: http://localhost:8001
+  ok    health                             200
+  ok    health reports mode                present
+  ok    list recipes                       200
+  ok    read recipe                        200
+  ok    read unknown recipe                404
+  ok    public prompt shown                present
+  ok    missing recipeId                   400
+  ok    unknown recipe                     404
+  ok    unverified recipe                  403
+  ok    missing image                      400
+  ok    text renamed .jpg                  400
+  ok    broken jpeg                        400
+  ok    oversize upload                    413
+  ok    bad result id                      404
+  ok    path traversal                     404
+  ok    unknown result id                  404
+  ok    generate                           200
+  ok    fetch result                       200
+
+18 passed, 0 failed
+
+▶ Web client + real upload tests
+$ node --test --test-isolation=none tests/*.test.mjs
+(node:21312) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/claude/mosaic/apps/web/proxy.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/claude/mosaic/apps/web/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ public list uses the real API envelope and retains unverified fields (502.045939ms)
+✔ multipart sends only recipeId + image, with browser-generated content type and a 75-second timeout (2.340936ms)
+✔ all documented error codes are preserved and mapped (3.288935ms)
+✔ network failure and proxy 500 with failed health become backend_unavailable (1.600371ms)
+✔ network failure while health succeeds is a request failure (0.686402ms)
+✔ timeouts check health and never retry generation (1.09669ms)
+✔ malformed JSON/envelopes and invalid IDs are rejected (1.012649ms)
+✔ live/cached/mock preserve sourceNote exactly, with truthful image availability (1.54714ms)
+✔ upload accepts <=8 MiB JPEG/PNG/WebP, rejects larger/empty/wrong formats (0.362713ms)
+✔ liveGeneration reads the health flag and degrades to null (0.763913ms)
+✔ a host's 413 (non-JSON body) is reported as too_large, not a bad response (0.418384ms)
+✔ a real image, sent through the real client over real HTTP, produces a correct, self-consistent result (40.69027ms)
+✔ corrupt image bytes are rejected by the real backend's magic-byte check, not silently accepted (5.397201ms)
+✔ an 8MB+1 image is rejected for size before the backend touches its content (60.207367ms)
+✔ a recipe nobody has verified (tryReady=false, the real shipped default) refuses generation over the real wire (4.853837ms)
+✔ an unknown recipe id is rejected before the upload is processed (4.574457ms)
+✔ only runs for generate requests (0.194144ms)
+✔ on Vercel, signs the platform's x-real-ip for the API (2.691545ms)
+✔ drops forged headers from the browser (1.744886ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 915.824516
+
+▶ Production build
+$ pnpm --filter @mosaic/web build
+$ next build --webpack
+▲ Next.js 16.3.8 (webpack)
+✓ Running next.config.ts took 45ms
+- Experiments (use with caution):
+  · proxyTimeout: 75000
+  ⨯ useTypeScriptCli
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.1s
+  Running TypeScript ...
+  Finished TypeScript in 3.5s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/7) ...
+  Generating static pages using 3 workers (1/7) 
+  Generating static pages using 3 workers (3/7) 
+  Generating static pages using 3 workers (5/7) 
+✓ Generating static pages using 3 workers (7/7) in 691ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /about
+├ ƒ /create/[id]
+├ ○ /my-recipes
+├ ○ /privacy
+├ ƒ /recipe/[id]
+├ ƒ /result/[id]
+└ ○ /terms
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+▶ Browser journey (Playwright)
+$ node --test --test-concurrency=1 tests/e2e/*.test.mjs
+✔ discover → recipe → create → live result → refresh → favorites (20824.537954ms)
+✔ recipes not yet verified cannot be tried, even by direct URL (3164.102976ms)
+✔ demo mode is announced before uploading when no model key is set (1603.336983ms)
+✔ missing recipe and result show clear errors (4834.311275ms)
+✔ every page fits a 390px phone screen without sideways scrolling (8963.557857ms)
+✔ download, explore more, and a double click pays once (7694.496936ms)
+✔ model errors and timeouts end in an honest fallback, not a fake image (7800.233364ms)
+✔ refreshing during generation and trying again does not pay twice (8060.020442ms)
+✔ limits, oversized and invalid files show clear messages (9410.818668ms)
+✔ a 4–8MB photo is shrunk in the browser to fit hosting limits (4102.44305ms)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /about
+├ ƒ /create/[id]
+├ ○ /my-recipes
+├ ○ /privacy
+├ ƒ /recipe/[id]
+├ ƒ /result/[id]
+└ ○ /terms
+ƒ Proxy (Middleware)
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+  axe 1280px /recipe/seed-99: moderate page-has-heading-one ×1
+      html
+  axe 390px /recipe/seed-99: moderate page-has-heading-one ×1
+      html
+✔ no serious accessibility problems on any page (desktop and phone) (27013.376768ms)
+  internal links checked: /, /about, /create/seed-01, /my-recipes, /privacy, /recipe/seed-01, /recipe/seed-02, /recipe/seed-03, /terms
+  external links (not fetched): https://ai.google.dev/gemini-api/terms, https://github.com/joojoohappy/mosAIc, https://github.com/joojoohappy/mosAIc/issues, https://www.threads.com/share/BAWrpNBXBl/, https://www.threads.com/share/_g9YMjJ1V/
+✔ every internal link works; external links are listed (3427.937265ms)
+┌─────────┬───────────────────┬──────┬─────┬─────┬──────┐
+│ (index) │ path              │ ttfb │ dcl │ lcp │ jsKb │
+├─────────┼───────────────────┼──────┼─────┼─────┼──────┤
+│ 0       │ '/'               │ 4    │ 26  │ 156 │ 152  │
+│ 1       │ '/recipe/seed-01' │ 10   │ 30  │ 248 │ 152  │
+│ 2       │ '/recipe/seed-02' │ 8    │ 26  │ 276 │ 152  │
+│ 3       │ '/create/seed-01' │ 14   │ 32  │ 268 │ 152  │
+│ 4       │ '/create/seed-02' │ 8    │ 28  │ 260 │ 152  │
+│ 5       │ '/result/<id>'    │ 7    │ 23  │ 252 │ 152  │
+│ 6       │ '/my-recipes'     │ 4    │ 111 │ 136 │ 152  │
+│ 7       │ '/about'          │ 4    │ 22  │ 176 │ 152  │
+│ 8       │ '/privacy'        │ 4    │ 25  │ 188 │ 152  │
+│ 9       │ '/terms'          │ 7    │ 28  │ 180 │ 152  │
+│ 10      │ '/recipe/seed-99' │ 19   │ 78  │ 172 │ 152  │
+│ 11      │ '/no-such-page'   │ 6    │ 62  │ 156 │ 145  │
+└─────────┴───────────────────┴──────┴─────┴─────┴──────┘
+✔ pages load within the local performance budget (9331.448216ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 117690.990331
+
+──── Summary ────
+✖ Format + TypeScript (pnpm lint)
+✔ Python lint (ruff)
+✔ Backend unit tests
+✔ API status codes (test_api.sh)
+✔ Web client + real upload tests
+✔ Production build
+✔ Browser journey (Playwright)
+
+real	2m38.210s
+user	1m27.354s
+sys	0m17.828s

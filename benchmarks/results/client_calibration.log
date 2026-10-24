@@ -1,0 +1,12 @@
+python httpx asyncio   c=8   rep=1 p50=   6.76 p99= 166.63 rps=  583.6 server_cpu=0.26
+k6                     c=8   rep=1 p50=   2.05 p99=   6.00 rps= 3262.2 server_cpu=0.55
+python httpx asyncio   c=8   rep=2 p50=   7.36 p99= 114.27 rps=  590.9 server_cpu=0.28
+k6                     c=8   rep=2 p50=   2.43 p99=   6.05 rps= 2841.3 server_cpu=0.67
+python httpx asyncio   c=8   rep=3 p50=   7.25 p99= 123.13 rps=  614.2 server_cpu=0.29
+k6                     c=8   rep=3 p50=   2.64 p99=   6.37 rps= 2664.8 server_cpu=0.77
+python httpx asyncio   c=32  rep=1 p50= 106.06 p99= 593.64 rps=  223.5 server_cpu=0.15
+k6                     c=32  rep=1 p50=  11.89 p99=  22.48 rps= 2521.6 server_cpu=0.59
+python httpx asyncio   c=32  rep=2 p50= 102.40 p99= 603.30 rps=  222.7 server_cpu=0.14
+k6                     c=32  rep=2 p50=  13.34 p99=  34.05 rps= 2211.5 server_cpu=0.72
+python httpx asyncio   c=32  rep=3 p50= 110.20 p99= 527.81 rps=  223.4 server_cpu=0.16
+k6                     c=32  rep=3 p50=  10.56 p99=  20.19 rps= 2822.6 server_cpu=0.69

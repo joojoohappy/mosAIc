@@ -182,6 +182,19 @@ class ApiLimits(unittest.TestCase):
                              headers={"content-type": "application/octet-stream"})
         self.assertEqual((r.status_code, r.json()), (413, {"error": "too_large"}))
 
+    def test_body_cap_rejects_chunked_upload_with_the_contract_error(self):
+        # No Content-Length: the cap is hit while streaming. The client maps the
+        # error CODE to its message, so FastAPI's generic 400 "error parsing the
+        # body" is not good enough; it must be the documented 413 too_large.
+        def chunks():
+            for _ in range((main.MAX_REQUEST_BYTES // 65536) + 4):
+                yield b"x" * 65536
+
+        r = self.client.post("/api/generate", content=chunks(),
+                             headers={"content-type": "multipart/form-data; boundary=b"})
+        self.assertEqual((r.status_code, r.json()), (413, {"error": "too_large"}))
+        self.provider.assert_not_called()
+
     def test_provider_failure_detail_stays_in_the_log(self):
         self.provider.side_effect = RuntimeError("secret upstream detail")
         rid = self.post().json()["resultId"]
