@@ -1,5 +1,0 @@
-# Extra packages for the benchmark harness only (backend requirements come from apps/backend/requirements.txt).
-psutil
-matplotlib
-numpy
-pillow
