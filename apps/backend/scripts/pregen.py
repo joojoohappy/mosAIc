@@ -1,13 +1,11 @@
-"""Pre-generate the fallback layer. Run this BEFORE Build Day, not during it.
+"""Pre-generate the fallback ("cached") result for one recipe.
 
-    cd backend && python -m scripts.pregen seed-01 ./test-photo.jpg
+    cd apps/backend && .venv/bin/python -m scripts.pregen seed-01 ./test-photo.jpg
 
-It calls the same _call_provider the live path uses, so one successful run does four
-things at once: proves the provider works, produces the cached asset, records its
-provenance, and fills the empty 實測 row in docs/build-day/SEED-RECIPES.md.
-
-This is also why the live branch is pre-Build-Day work: you cannot run pregen without
-_call_provider already written.
+It calls the same _call_provider the live path uses, so one successful run proves
+the provider works, produces the cached asset, and records its provenance. Needs
+GEMINI_API_KEY in apps/backend/.env. Use a photo you are allowed to publish: its
+file name is quoted in every cached result's disclosure note.
 """
 
 import json
@@ -15,14 +13,14 @@ import sys
 import time
 from pathlib import Path
 
-from app.generation import FALLBACK_DIR, _call_provider, _is_image, _now
+from app import provider
+from app.generation import API_KEY, FALLBACK_DIR, _call_provider, _is_image, _now
 from app.recipes import get_recipe
-
-PROVIDER = "TODO: provider name"  # fill in when selected
-MODEL = "TODO: exact model id"    # copy from the provider's live docs, not memory
 
 if len(sys.argv) != 3:
     sys.exit(__doc__)
+if not API_KEY:
+    sys.exit("GEMINI_API_KEY is not set -- copy apps/backend/.env.example to .env first")
 
 recipe_id, photo = sys.argv[1], Path(sys.argv[2])
 recipe = get_recipe(recipe_id)
@@ -30,7 +28,7 @@ if recipe is None:
     sys.exit(f"unknown recipe: {recipe_id}")
 
 started = time.monotonic()
-img = _call_provider(recipe["prompt"], photo.read_bytes())
+img = _call_provider(recipe, photo.read_bytes())
 duration = round(time.monotonic() - started, 1)
 
 # If the provider answered with text -- a safety refusal, or it read the prompt as a
@@ -45,8 +43,8 @@ FALLBACK_DIR.mkdir(parents=True, exist_ok=True)
     json.dumps(
         {
             "image": f"{recipe_id}.{ext}",
-            "provider": PROVIDER,
-            "model": MODEL,
+            "provider": provider.NAME,
+            "model": provider.model(),
             "generatedAt": _now(),
             "inputPhoto": photo.name,
             "durationSec": duration,
@@ -56,4 +54,4 @@ FALLBACK_DIR.mkdir(parents=True, exist_ok=True)
     ),
     encoding="utf-8",
 )
-print(f"ok — {recipe_id} fallback written in {duration}s. Record it in docs/build-day/SEED-RECIPES.md too.")
+print(f"ok — {recipe_id} fallback written in {duration}s.")

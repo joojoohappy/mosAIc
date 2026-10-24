@@ -42,12 +42,7 @@ export function Shell({
         <nav aria-label="主要導覽">
           {[
             { href: "/", label: "Discover" },
-            ...(!about
-              ? [
-                  { href: "/my-recipes", label: "My Recipes" },
-                  { href: "/community", label: "Community" },
-                ]
-              : []),
+            { href: "/my-recipes", label: "My Recipes" },
             { href: "/about", label: "About" },
           ].map((item) => (
             <Link
@@ -61,7 +56,7 @@ export function Shell({
         </nav>
         {!about && (
           <Link
-            href="/"
+            href="/#recipes"
             className="button primary header-cta"
             title="Choose a recipe to create your own interpretation"
           >
@@ -71,16 +66,18 @@ export function Shell({
       </header>
       {children}
       <footer className="footer">
-        <p>
-          {about
-            ? "© 2026 mosAIc. All rights reserved."
-            : "© 2025 mosAIc. Creative AI prompt sharing platform."}
-        </p>
+        <p>© 2026 mosAIc. Creative AI prompt sharing platform.</p>
         <div>
-          {!about && <Link href="/about">About</Link>}
-          <span>Terms{about ? " of Service" : ""}</span>
-          <span>Privacy{about ? " Policy" : ""}</span>
-          {!about && <span>Help</span>}
+          <Link href="/about">About</Link>
+          <Link href="/privacy">隱私說明</Link>
+          <Link href="/terms">使用條款</Link>
+          <a
+            href="https://github.com/joojoohappy/mosAIc"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub
+          </a>
         </div>
       </footer>
     </div>
@@ -110,36 +107,46 @@ export function Placeholder({
   className?: string;
 }) {
   return (
-    <div className={`placeholder ${className}`}>
+    <div className={`placeholder ${className}`} aria-hidden="true">
       <Icon />
       {label && <span>{label}</span>}
     </div>
   );
 }
+const isHttp = (url: string | null): url is string =>
+  !!url && /^https?:\/\//i.test(url);
+/**
+ * Creator credit + links. The IG link appears only for a verified creator
+ * (creatorName set); the original post is always linked.
+ */
 export function Attribution({
   creatorName,
   creatorInstagramUrl,
   sourcePostUrl,
+  hideName = false,
 }: Pick<
   PublicRecipe,
   "creatorName" | "creatorInstagramUrl" | "sourcePostUrl"
->) {
-  const href = creatorName
-    ? creatorInstagramUrl || sourcePostUrl
-    : sourcePostUrl;
-  const safe = /^https?:\/\//i.test(href);
-  const label = creatorName || "來源待確認 · 查看原始貼文";
-  return safe ? (
-    <a
-      className="attribution"
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {label}
-    </a>
-  ) : (
-    <span className="attribution">{creatorName || "來源待確認"}</span>
+> & {
+  hideName?: boolean;
+}) {
+  const external = { target: "_blank", rel: "noopener noreferrer" };
+  return (
+    <p className="attribution">
+      {!hideName && (
+        <span>{creatorName ? `by ${creatorName}` : "來源待確認"}</span>
+      )}
+      {creatorName && isHttp(creatorInstagramUrl) && (
+        <a href={creatorInstagramUrl} {...external}>
+          前往原作者 IG
+        </a>
+      )}
+      {isHttp(sourcePostUrl) && (
+        <a href={sourcePostUrl} {...external}>
+          查看原始貼文
+        </a>
+      )}
+    </p>
   );
 }
 export function Back({
@@ -185,27 +192,13 @@ export function Tags({ tags }: { tags: string[] }) {
     </div>
   );
 }
-export const categories = [
-  "All",
-  "Geometric",
-  "Editorial",
-  "Paper Cut",
-  "Photography",
-  "Abstract",
-  "Illustration",
-];
-// The public contract has no category field. These local facets only match words
-// explicitly present in a recipe's title/summary; they do not alter API records.
+/** Category first, then style tags, without duplicates. */
 export function recipeTags(recipe: PublicRecipe): string[] {
-  const text = recipe.title + " " + recipe.summary;
   return [
-    ["Geometric", /geometric|幾何/i],
-    ["Editorial", /editorial|編輯/i],
-    ["Paper Cut", /paper.?cut|紙雕/i],
-    ["Photography", /photo|照片/i],
-    ["Abstract", /abstract|抽象/i],
-    ["Illustration", /portrait|插畫|彩鉛/i],
-  ]
-    .filter(([, pattern]) => (pattern as RegExp).test(text))
-    .map(([name]) => name as string);
+    ...new Set([recipe.category, ...recipe.tags].filter(Boolean)),
+  ] as string[];
+}
+/** Filter chips: "All" plus every tag that at least one recipe has. */
+export function filterOptions(recipes: PublicRecipe[]): string[] {
+  return ["All", ...new Set(recipes.flatMap(recipeTags))];
 }

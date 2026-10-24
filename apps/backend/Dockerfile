@@ -1,6 +1,4 @@
-# Verification-only image: confirms the wiring, not a production build.
-# (docs/build-day non-goals explicitly exclude Docker/prod deploy for Build Day
-# itself — this exists because the user asked to verify local integration now.)
+# Local integration image (used by the root docker-compose.yml).
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -15,4 +13,6 @@ COPY scripts scripts
 
 # .env is NOT copied (see .dockerignore) -- the key comes in via compose env_file
 # at runtime so it never gets baked into the image layer.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --no-proxy-headers: never let X-Forwarded-For rewrite the client address used
+# by the per-visitor limits (see app/limits.py client_id).
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers"]

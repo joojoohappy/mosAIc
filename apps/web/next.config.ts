@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
     "@mosaic/design",
   ],
   poweredByHeader: false,
+  // Lets the quality test build next to a normal build without clobbering it.
+  distDir: process.env.MOSAIC_DIST_DIR || ".next",
   experimental: {
     proxyTimeout: 75_000,
     useTypeScriptCli: false,

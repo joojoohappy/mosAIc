@@ -4,25 +4,25 @@ const principles = [
     icon: "0ab76",
     title: "Creator Attribution Always",
     description:
-      "Original creators and sources are never erased. Every derivative prompt or output links back to its ancestor, keeping the creative tree unbroken.",
+      "Every recipe links to its original post, and to the creator's Instagram once verified. Results keep that credit, so the creator stays visible after you try their idea.",
   },
   {
     icon: "ebea2",
     title: "Accessible Creativity",
     description:
-      "Anyone can explore, learn from, and participate in creative AI. We demystify the configurations so you can focus strictly on the art.",
+      "Upload a photo and try a creator's prompt right here. No copying text between tools, no setup.",
   },
   {
     icon: "8049c",
     title: "Transparent Process",
     description:
-      "Recipe context, result sources, and creator attribution are visible by design. Private prompts remain on the server.",
+      "Every result says how it was made: live from your photo, a prepared example, or a placeholder. We never pass off a sample as your creation.",
   },
   {
     icon: "65209",
     title: "Community-Driven",
     description:
-      "Built by and for the creative community. Leveling the playing field so independent artists can collaborate and claim ownership of their pipelines.",
+      "Prompts come from creators who tested and shared them on social media. mosAIc gathers them in one place and sends people back to talk with the people who made them.",
   },
 ];
 export default function About() {
@@ -36,21 +36,22 @@ export default function About() {
         <section className="mission">
           <div>
             <span className="eyebrow">The Mission</span>
-            <h2>Preserving creative lineage</h2>
+            <h2>
+              Make AI creativity easy to explore, without erasing creators
+            </h2>
             <p>
-              Our platform allows anyone to discover creative AI recipes shared
-              by others, make their own unique versions, and experiment
-              freely—all while preserving original creator attribution and
-              tracing the evolutionary lineage of every prompt and model
-              configuration.
+              Creators spend hours testing and refining image prompts before
+              sharing them. mosAIc collects those prompts with the
+              creator&apos;s preview, lets you try them on your own photo in one
+              click, and always points back to the original post and creator.
             </p>
           </div>
           <div className="lineage">
-            <span>Original Recipe</span>
+            <span>Creator&apos;s post</span>
             <Icon name="ec6b1" size={24} height={2} />
             <div>
-              <span className="remix">Your Remix A</span>
-              <span>Remix B</span>
+              <span className="remix">Your creation</span>
+              <span>Credit kept</span>
             </div>
           </div>
         </section>
@@ -77,20 +78,20 @@ export default function About() {
           <div className="roadmap-grid">
             {[
               {
-                title: "Recipe Collections",
-                text: "Group and organize related workflows into curated aesthetic boards.",
+                title: "Verified creators",
+                text: "Confirm each creator and their Instagram, and show their own preview images.",
               },
               {
-                title: "Creator Profiles",
-                text: "Showcase your generated lineage trees and published prompt pipelines.",
+                title: "More recipes",
+                text: "Grow beyond the first three seeds with prompts creators agree to share.",
               },
               {
-                title: "Developer API",
-                text: "Programmatically execute, remix, and query lineage datasets.",
+                title: "Creator controls",
+                text: "Let creators choose whether a prompt is public, hidden, or open to try.",
               },
               {
-                title: "Challenges",
-                text: "Participate in community-voted design and prompt-engineering sprints.",
+                title: "Mobile app",
+                text: "Bring the same recipes and API to an Expo app.",
               },
             ].map((item) => (
               <article key={item.title}>

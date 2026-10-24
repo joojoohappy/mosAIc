@@ -36,7 +36,17 @@ export type ApiError =
   /** 403 — recipe.tryReady is false. Not a user error; the recipe is not cleared yet. */
   | "recipe_not_ready"
   | "unknown_recipe"
-  | "unknown_result";
+  | "unknown_result"
+  /** 400 — the file has image magic bytes but does not decode (or is huge). */
+  | "invalid_image"
+  /** 429 — too many requests from this visitor in the last minute. */
+  | "rate_limited"
+  /** 429 — this visitor used today's allowance. */
+  | "daily_limit_reached"
+  /** 503 — the service-wide daily generation budget is used up. */
+  | "daily_budget_reached"
+  /** 503 — too many generations running right now. */
+  | "server_busy";
 
 /** GET /api/recipes */
 export type RecipeListResponse = { recipes: PublicRecipe[] };
@@ -45,4 +55,8 @@ export type RecipeListResponse = { recipes: PublicRecipe[] };
 export type GenerateResponse = { resultId: string } | { error: ApiError };
 
 /** GET /api/health — distinguishes "backend not running" from a real error. */
-export type HealthResponse = { ok: true };
+export type HealthResponse = {
+  ok: true;
+  /** true when an image model key is configured; false means cached/mock only. */
+  liveGeneration: boolean;
+};

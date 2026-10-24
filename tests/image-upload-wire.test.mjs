@@ -5,8 +5,7 @@
 // multipart wire encoding, against a real backend process.
 //
 // The backend runs from an isolated temp copy of app/ + data/, never the
-// repo's own apps/backend/, so this can't collide with a human's dev.sh (this
-// session hit exactly that class of bug three times tonight) and never
+// repo's own apps/backend/, so it can't collide with a running dev.sh and never
 // mutates the real data/recipes.json even though it flips tryReady to
 // exercise the accept path.
 import { test, before, after } from "node:test";
@@ -16,7 +15,10 @@ import { cp, mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer } from "node:net";
-import { createMosaicClient, MosaicApiError } from "../packages/api/src/client.ts";
+import {
+  createMosaicClient,
+  MosaicApiError,
+} from "../packages/api/src/client.ts";
 
 const REPO_ROOT = new URL("..", import.meta.url).pathname;
 const VENV_PYTHON = join(REPO_ROOT, "apps/backend/.venv/bin/python");
@@ -55,12 +57,15 @@ before(async () => {
   }
 
   tmp = await mkdtemp(join(tmpdir(), "mosaic-wire-"));
-  await cp(join(REPO_ROOT, "apps/backend/app"), join(tmp, "app"), { recursive: true });
-  await cp(join(REPO_ROOT, "apps/backend/data"), join(tmp, "data"), { recursive: true });
+  await cp(join(REPO_ROOT, "apps/backend/app"), join(tmp, "app"), {
+    recursive: true,
+  });
+  await cp(join(REPO_ROOT, "apps/backend/data"), join(tmp, "data"), {
+    recursive: true,
+  });
 
   // Flip exactly one recipe's tryReady in the COPY only. The shipped file (all
-  // three false, per SEED-RECIPES.md -- nobody has verified a basis to run
-  // them yet) is never touched.
+  // three false until their sources are verified) is never touched.
   const recipesPath = join(tmp, "data/recipes.json");
   const recipes = JSON.parse(await readFile(recipesPath, "utf8"));
   recipes[0].tryReady = true;
@@ -72,15 +77,31 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${port}`;
   proc = spawn(
     VENV_PYTHON,
-    ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", String(port)],
-    { cwd: tmp, stdio: "ignore" },
+    [
+      "-m",
+      "uvicorn",
+      "app.main:app",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      String(port),
+    ],
+    { cwd: tmp, stdio: "ignore", env: { ...process.env, GEMINI_API_KEY: "" } },
   );
 
   const deadline = Date.now() + 15_000;
   for (;;) {
-    if (await fetch(baseUrl + "/api/health").then((r) => r.ok, () => false)) break;
-    if (Date.now() > deadline) throw new Error("backend did not come up in time");
-    if (proc.exitCode !== null) throw new Error("backend exited during startup");
+    if (
+      await fetch(baseUrl + "/api/health").then(
+        (r) => r.ok,
+        () => false,
+      )
+    )
+      break;
+    if (Date.now() > deadline)
+      throw new Error("backend did not come up in time");
+    if (proc.exitCode !== null)
+      throw new Error("backend exited during startup");
     await new Promise((r) => setTimeout(r, 100));
   }
 
@@ -125,7 +146,9 @@ test("corrupt image bytes are rejected by the real backend's magic-byte check, n
 test("an 8MB+1 image is rejected for size before the backend touches its content", async () => {
   const oversized = Buffer.concat([PNG, Buffer.alloc(8 * 1024 * 1024)]);
   const file = new File([oversized], "photo.png", { type: "image/png" });
-  await assert.rejects(api.generate(readyRecipeId, file), { code: "too_large" });
+  await assert.rejects(api.generate(readyRecipeId, file), {
+    code: "too_large",
+  });
 });
 
 test("a recipe nobody has verified (tryReady=false, the real shipped default) refuses generation over the real wire", async () => {

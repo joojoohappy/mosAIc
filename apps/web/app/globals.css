@@ -95,9 +95,6 @@ img {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.header nav a:last-child {
-  color: var(--mosaic-blue);
-}
 .button {
   border: 1px solid #cbd5e1;
   border-radius: 6px;
@@ -292,9 +289,6 @@ img {
   gap: 16px;
   flex-wrap: wrap;
 }
-.footer span {
-  cursor: default;
-}
 .detail-nav {
   display: flex;
   justify-content: space-between;
@@ -395,9 +389,32 @@ img {
   color: var(--mosaic-muted);
 }
 .attribution {
-  color: var(--mosaic-blue);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  color: var(--mosaic-muted);
   font-size: 13px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.attribution a {
+  color: var(--mosaic-blue);
+}
+.prompt-text {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  padding: 12px 14px;
+  background: var(--mosaic-surface);
+  border: 1px solid var(--mosaic-border);
+  border-radius: var(--mosaic-radius);
+  font:
+    13px/1.6 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .permission-row {
@@ -523,6 +540,10 @@ img {
   background: transparent;
   border: 0;
   white-space: nowrap;
+}
+.panel > .text-button {
+  align-self: flex-start;
+  padding: 0;
 }
 .loading-line {
   display: flex;
@@ -680,7 +701,7 @@ img {
 .eyebrow {
   font-size: 12px;
   font-weight: 700;
-  color: #3b82f6;
+  color: #2563eb;
   text-transform: uppercase;
   line-height: 16px;
 }
@@ -714,8 +735,8 @@ img {
   display: block;
 }
 .lineage .remix {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: #2563eb;
+  color: #2563eb;
 }
 .lineage > div {
   display: flex;
@@ -966,4 +987,57 @@ img {
   .about-site .brand {
     font-size: 17px;
   }
+}
+.mode-notice {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #fcd34d;
+  border-radius: var(--mosaic-radius);
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.next-row {
+  display: flex;
+  gap: 12px;
+}
+.next-row .button {
+  flex: 1;
+}
+.legal {
+  max-width: 760px;
+  margin: 0 auto;
+  color: var(--mosaic-ink);
+  line-height: 1.75;
+}
+.legal h1 {
+  font-size: 28px;
+}
+.legal h2 {
+  margin-top: 28px;
+  font-size: 18px;
+}
+.legal ul {
+  padding-left: 20px;
+}
+.legal a {
+  color: var(--mosaic-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.legal-updated {
+  color: var(--mosaic-muted);
+  font-size: 13px;
+}
+.consent {
+  margin: 0;
+  color: var(--mosaic-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.consent a {
+  color: var(--mosaic-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }

@@ -1,0 +1,32 @@
+name: Deployment smoke test
+
+# Vercel reports each finished deployment back to GitHub; smoke-test the
+# website deployment it just created (read-only: no paid model calls).
+on: deployment_status
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      contains(github.event.deployment.environment, 'mos-a-ic-web')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Smoke test
+        env:
+          # Optional: Vercel "Protection Bypass for Automation" secret.
+          VERCEL_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+        run: |
+          set +e
+          bash scripts/smoke.sh "$URL"
+          code=$?
+          if [ "$code" = 3 ] && [ -z "$VERCEL_BYPASS" ]; then
+            echo "::notice::Skipped: deployment is protected and the VERCEL_AUTOMATION_BYPASS_SECRET repo secret is not set."
+            exit 0
+          fi
+          exit "$code"

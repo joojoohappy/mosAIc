@@ -1,15 +1,15 @@
 """Unit tests for the generation pipeline.
 
-    cd backend && python -m unittest
+    cd apps/backend && .venv/bin/python -m unittest discover -s tests -v
 
-stdlib unittest on purpose: pytest would be nicer to read and is one more thing to
-install on a laptop at 9am on Build Day.
+stdlib unittest on purpose: nothing extra to install.
 
 Every test isolates the filesystem into a tmpdir, so running these never touches
 storage/ and can never leave a fabricated provenance sidecar behind.
 """
 
 import base64
+import io
 import json
 import shutil
 import tempfile
@@ -18,6 +18,7 @@ from pathlib import Path
 from unittest import mock
 
 from app import generation as generate
+from app import provider
 from app import recipes as recipe_mod
 
 # A real 1x1 PNG: these bytes are written to disk and served, so use a valid file.
@@ -77,6 +78,23 @@ class RecipeLookup(Base):
             self.assertTrue(r["prompt"].strip(), f"{r['id']} has no prompt")
             self.assertTrue(r["sourcePostUrl"].startswith("https://"))
 
+    def test_recipe_data_is_well_formed(self):
+        recipes = recipe_mod.load_recipes()
+        self.assertEqual(len({r["id"] for r in recipes}), len(recipes), "duplicate ids")
+        for r in recipes:
+            with self.subTest(recipe=r["id"]):
+                self.assertRegex(r["id"], r"^[a-z0-9-]+$")
+                for field in ("title", "summary", "category", "inputNote", "prompt"):
+                    self.assertTrue(isinstance(r[field], str) and r[field].strip(), field)
+                self.assertTrue(r["tags"] and all(isinstance(t, str) for t in r["tags"]))
+                self.assertIn(r["promptVisibility"], ("public", "hidden"))
+                self.assertRegex(r["aspectRatio"], r"^\d+:\d+$")
+                self.assertIsInstance(r["tryReady"], bool)
+                for url in (r["creatorInstagramUrl"],):
+                    self.assertTrue(url is None or url.startswith("https://"))
+                for preview in (r["previewImageUrl"], r["previewBeforeUrl"]):
+                    self.assertTrue(preview is None or preview.startswith("/static/seed/"))
+
     def test_unknown_recipe_returns_none(self):
         self.assertIsNone(recipe_mod.get_recipe("seed-99"))
         self.assertIsNone(recipe_mod.get_recipe(""))
@@ -90,12 +108,22 @@ class RecipeLookup(Base):
 
 
 class PublicProjection(Base):
-    """The structural guarantee that prompt text cannot reach a client."""
+    """Prompt text reaches a client only when the creator shared it publicly."""
 
-    def test_prompt_is_never_in_the_projection(self):
+    def test_public_prompt_is_shown_verbatim(self):
         for r in recipe_mod.load_recipes():
             with self.subTest(recipe=r["id"]):
-                self.assertNotIn("prompt", recipe_mod.public_recipe(r))
+                self.assertEqual(r["promptVisibility"], "public")
+                p = recipe_mod.public_recipe(r)
+                self.assertEqual(p["prompt"], r["prompt"])
+                self.assertEqual(p["promptVisibility"], "public")
+
+    def test_hidden_or_unknown_visibility_never_leaks_the_prompt(self):
+        for visibility in ("hidden", None, "Public", "yes"):
+            with self.subTest(visibility=visibility):
+                p = recipe_mod.public_recipe({**self.recipe, "promptVisibility": visibility})
+                self.assertIsNone(p["prompt"])
+                self.assertEqual(p["promptVisibility"], "hidden")
 
     def test_projection_is_an_allowlist_not_a_denylist(self):
         # A private field added to recipes.json later must stay private by default.
@@ -106,7 +134,7 @@ class PublicProjection(Base):
         # The frontend codes against a fixed shape; a thin record still yields
         # every key, with null for what is missing.
         thin = recipe_mod.public_recipe({"id": "seed-01"})
-        self.assertEqual(set(thin), set(recipe_mod.PUBLIC_FIELDS))
+        self.assertEqual(set(thin), {*recipe_mod.PUBLIC_FIELDS, "prompt"})
         self.assertIsNone(thin["tryReady"])
 
     def test_projection_carries_what_the_gallery_needs(self):
@@ -207,7 +235,7 @@ class Modes(Base):
         with mock.patch.multiple(generate, API_KEY="k", _call_provider=boom):
             r = generate.run_generation(self.recipe, JPEG)
         self.assertEqual(r["mode"], "cached")
-        self.assertIn("TimeoutError", r["fallbackReason"])
+        self.assertEqual(r["fallbackReason"], "provider_timeout")
 
     def test_provider_returning_text_is_not_live(self):
         # A 200 carrying a refusal message is a failure, not an image.
@@ -216,13 +244,61 @@ class Modes(Base):
                                  _call_provider=mock.Mock(return_value=b'{"refused":1}')):
             r = generate.run_generation(self.recipe, JPEG)
         self.assertEqual(r["mode"], "cached")
-        self.assertIn("not an image", r["fallbackReason"])
+        self.assertEqual(r["fallbackReason"], "provider_no_image")
 
-    def test_provider_is_given_the_stored_prompt_not_the_caller_input(self):
+    def test_provider_is_given_the_stored_recipe_not_the_caller_input(self):
         spy = mock.Mock(return_value=PNG)
         with mock.patch.multiple(generate, API_KEY="k", _call_provider=spy):
             generate.run_generation(self.recipe, JPEG)
-        spy.assert_called_once_with(self.recipe["prompt"], JPEG)
+        spy.assert_called_once_with(self.recipe, JPEG)
+
+
+class GeminiProvider(Base):
+    """The wire format, checked without a network call."""
+
+    def test_request_carries_prompt_image_and_aspect_ratio(self):
+        body = provider.build_request("make art", JPEG, "jpg", "3:4")
+        text, image = body["input"]
+        self.assertEqual(text, {"type": "text", "text": "make art"})
+        self.assertEqual(image["mime_type"], "image/jpeg")
+        self.assertEqual(base64.b64decode(image["data"]), JPEG)
+        self.assertEqual(body["response_format"]["aspect_ratio"], "3:4")
+        self.assertEqual(body["model"], provider.model())
+
+    def test_aspect_ratio_is_optional(self):
+        body = provider.build_request("p", PNG, "png", None)
+        self.assertNotIn("aspect_ratio", body["response_format"])
+
+    def test_extracts_output_image(self):
+        payload = {"output_image": {"data": base64.b64encode(PNG).decode()}}
+        self.assertEqual(provider.extract_image(payload), PNG)
+
+    def test_extracts_image_from_steps(self):
+        payload = {"steps": [{"type": "model_output", "content": [
+            {"type": "text", "text": "here you go"},
+            {"type": "image", "data": base64.b64encode(PNG).decode()},
+        ]}]}
+        self.assertEqual(provider.extract_image(payload), PNG)
+
+    def test_text_only_answer_is_an_error(self):
+        with self.assertRaises(ValueError):
+            provider.extract_image({"steps": [{"content": [{"type": "text", "text": "no"}]}]})
+
+    def test_live_path_sends_key_and_returns_bytes(self):
+        seen = {}
+
+        def fake_urlopen(req, timeout):
+            seen["key"] = req.get_header("X-goog-api-key")
+            seen["timeout"] = timeout
+            out = {"output_image": {"data": base64.b64encode(PNG).decode()}}
+            return mock.MagicMock(__enter__=lambda s: io.BytesIO(json.dumps(out).encode()))
+
+        with mock.patch.object(provider.urllib.request, "urlopen", fake_urlopen), \
+                mock.patch.object(generate, "API_KEY", "secret"):
+            r = generate.run_generation(self.recipe, JPEG)
+        self.assertEqual(r["mode"], "live")
+        self.assertEqual(seen["key"], "secret")
+        self.assertLessEqual(seen["timeout"], 60)
 
 
 class Disclosure(Base):
@@ -262,6 +338,15 @@ class ResultStore(Base):
         for bad in ("../../etc/passwd", "nope", "", "A" * 32, "a" * 31, "a" * 33):
             with self.subTest(bad=bad):
                 self.assertIsNone(generate.load_result(bad))
+
+    def test_results_expire_after_the_retention_period(self):
+        r = generate.run_generation(self.recipe, JPEG)
+        path = self.results / f"{r['resultId']}.json"
+        old = {**r, "createdAt": "2020-01-01T00:00:00Z"}
+        path.write_text(json.dumps(old), encoding="utf-8")
+        self.assertIsNone(generate.load_result(r["resultId"]))
+        with mock.patch.dict("os.environ", {"MOSAIC_RESULT_RETENTION_DAYS": "100000"}):
+            self.assertIsNotNone(generate.load_result(r["resultId"]))
 
     def test_unknown_id_is_none_not_an_error(self):
         self.assertIsNone(generate.load_result("0" * 32))

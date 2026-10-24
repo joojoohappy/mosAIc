@@ -21,7 +21,7 @@ if [ ! -x "$UV" ]; then
   exit 1
 fi
 
-"$UV" app.main:app --port "$BACKEND_PORT" --app-dir apps/backend &
+"$UV" app.main:app --port "$BACKEND_PORT" --app-dir apps/backend --no-proxy-headers &
 API=$!
 trap 'kill $API 2>/dev/null || true' EXIT
 

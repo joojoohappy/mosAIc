@@ -1,7 +1,9 @@
-fastapi
-uvicorn[standard]
-python-multipart
-python-dotenv
-
-# The provider's HTTP client goes here once a provider is actually selected.
-# Adding it before that means picking the wrong dependency under time pressure.
+# Direct dependencies, pinned to the versions the test suite last passed with
+# (pip-audit clean). Update deliberately: bump, run scripts/test-all.sh, re-audit.
+fastapi==0.159.1
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+python-dotenv==1.2.4
+Pillow==13.0.0
+# Vercel Blob result storage; only imported when a Blob store is connected.
+vercel-blob==0.5.0

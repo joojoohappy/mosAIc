@@ -1,62 +1,143 @@
 # mosAIc
 
-第一版正式網頁前端：Next.js App Router＋React＋TypeScript，依 Figma 畫面與 [MOSAIC 前端對接](https://claude.ai/artifact/VKcqRCFHdSMFTxTCfqf7wA) 實作。FastAPI 負責所有 API 與生成流程。
+**Try the AI image prompts creators share, on your own photo, without losing track of who made them.**
 
-## 專案位置
+[中文說明](README.zh-TW.md)
 
-- `apps/web`：網頁、元件、上傳與結果頁。
-- `apps/backend`：原有 Python / FastAPI 後端；邏輯、資料與測試保留。
-- `apps/mobile`：原 mobile 預留目錄，尚未建立 Expo app。
-- `packages/api`、`types`、`core`、`design`：共用 API client、資料型別、上傳驗證、設計變數。
-- `docs/architecture/api-contract.md`：API 對接規則。
-- `content/recipes`：未來編輯內容的預留位置；後端資料仍在 `apps/backend/data/recipes.json`。
+Creators on social media spend hours testing and refining image-generation prompts before they share them. mosAIc collects those prompts as "recipes" in one gallery. Pick a recipe, read the full prompt and the original post, upload a photo, and mosAIc runs the prompt for you. No copying text, no switching between AI tools. Every recipe and every result keeps a link back to the creator.
 
-原 `frontend/website` → `apps/web`；`frontend/mobile` → `apps/mobile`；`backend` → `apps/backend`；`frontend/shared/types` → `packages/types`。原本網頁目錄只有佔位檔案，因此這次一併完成搬移。
+![mosAIc walkthrough: browse recipes, open one, upload a photo, see the result](docs/media/walkthrough.gif)
 
-## 本機啟動
+<sub>Walkthrough recorded locally with one recipe temporarily opened for Try and no AI key configured, so the result page honestly shows a placeholder ("示意結果").</sub>
 
-需要 Node.js 24 以上、pnpm 11.19.0、Python 3.10 以上。以下命令都從 repo 根目錄執行。
+## Demo video
+
+> 🎬 **Full demo video with live AI generation: coming soon.**
+>
+> <!-- Replace this block with the video link (YouTube / Vimeo) or drag an .mp4 into a GitHub edit of this file. -->
+
+## How it works
+
+| 1. Discover                                                        | 2. Read the recipe                                                                           |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| ![Discover page](docs/media/1-discover.png)                        | ![Recipe page](docs/media/2-recipe.png)                                                      |
+| Browse recipes and filter by style. Save favorites on your device. | See the full prompt, what to upload, and links to the original post and the creator.         |
+| **3. Try it**                                                      | **4. Get your result**                                                                       |
+| ![Create page](docs/media/3-create.png)                            | ![Result page](docs/media/4-result.png)                                                      |
+| Upload one JPEG / PNG / WebP photo (up to 8 MB) and press Create.  | Download or share the image. The page always says how it was made and who shared the prompt. |
+
+## Features
+
+- **Creator first.** Every recipe links to its original post, and to the creator's Instagram once verified. Unverified creators show `來源待確認` instead of a guess.
+- **One-click try.** The server pairs your photo with the recipe's stored prompt and sends both to the image model. The browser never handles API keys or sends prompt text.
+- **Honest results.** Each result is labelled `live` (made from your photo just now), `cached` (a prepared example from a test photo) or `mock` (placeholder). A sample is never passed off as yours.
+- **Your photo isn't kept.** mosAIc forwards it to the image model and does not save it.
+- **Private, shareable results.** Every result has its own unguessable link that still works after a refresh. Nothing is listed publicly; it is seen only if you share it. Links expire after 30 days.
+- **Fair use built in.** Per-visitor and daily limits, a daily spending ceiling and duplicate-click protection keep a free demo from running up a bill. The site's `/privacy` page explains how data is handled.
+
+## Recipes
+
+| Recipe                             | Effect                                                                                         | Upload        |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------- | ------------- |
+| Photo + Geometric Editorial Poster | Top half keeps your photo, bottom half becomes a geometric illustration. 3:4, no text.         | One photo     |
+| Photo + Layered Paper-Cut Poster   | Top half keeps your photo, bottom half becomes layered paper-cut art with editorial type. 3:4. | One photo     |
+| Colored-Pencil Pet Portrait        | A small, vivid colored-pencil head portrait on white. 4:5.                                     | One dog photo |
+
+The first recipes come from public Threads posts. They open for Try once each creator and the basis for running their prompt have been confirmed.
+
+## Run it locally
+
+Requirements: Node.js 24+, pnpm 11, Python 3.10+. Run everything from the repository root.
 
 ```sh
 pnpm install
-python -m venv apps/backend/.venv
+python3 -m venv apps/backend/.venv
+apps/backend/.venv/bin/pip install -r apps/backend/requirements.txt   # Windows: apps\backend\.venv\Scripts\pip
+cp apps/backend/.env.example apps/backend/.env                          # then add GEMINI_API_KEY
+bash scripts/dev.sh
 ```
 
-Windows：
-
-```powershell
-apps/backend/.venv/Scripts/python.exe -m pip install -r apps/backend/requirements.txt
-apps/backend/.venv/Scripts/python.exe -m uvicorn app.main:app --app-dir apps/backend --port 8000
-```
-
-macOS / Linux：
+Open http://localhost:3000. `scripts/dev.sh` starts the API on port 8000 and the website on port 3000 (use `BACKEND_PORT=8010 bash scripts/dev.sh` if 8000 is busy). On Windows, start the two parts separately:
 
 ```sh
-apps/backend/.venv/bin/python -m pip install -r apps/backend/requirements.txt
-apps/backend/.venv/bin/python -m uvicorn app.main:app --app-dir apps/backend --port 8000
+apps/backend/.venv/Scripts/python -m uvicorn app.main:app --app-dir apps/backend --port 8000 --no-proxy-headers
+pnpm dev
 ```
 
-另外開一個終端機執行 `pnpm dev`，瀏覽 `http://localhost:3000`。完成安裝後，macOS / Linux 也可以使用 `bash scripts/dev.sh` 同時啟動前後端。
+Or run both in Docker: `docker compose up --build` (website on 3000, API on 8010).
 
-後端如使用其他位址，在 `apps/web/.env.local` 設定 `BACKEND_URL=http://127.0.0.1:8010`，再啟動前端。範本見 `apps/web/.env.example`。Backend 的環境變數請參考 `apps/backend/.env.example`；金鑰只放後端。
+### AI generation
 
-## 檢查與正式部署
+Live generation uses a Google Gemini image model. Put a key from [Google AI Studio](https://aistudio.google.com/apikey) in `apps/backend/.env` as `GEMINI_API_KEY`. Without a key the app still runs and every result is a clearly labelled `cached` or `mock` result.
+
+To open a recipe for Try, set its `tryReady` to `true` in `apps/backend/data/recipes.json`. To prepare a `cached` fallback for demos, run:
 
 ```sh
-pnpm typecheck
-pnpm test
-pnpm build
-pnpm start
+cd apps/backend && .venv/bin/python -m scripts.pregen seed-01 path/to/test-photo.jpg
 ```
 
-後端測試：啟用後端 virtualenv 後，執行 `cd apps/backend`、`python -m unittest discover -s tests -v`。
+## Tests
 
-正式部署需要 Next.js server 與 FastAPI server。`/api/*`、`/static/*` 由 Next.js 代理至 `BACKEND_URL`；75 秒代理與生成等待時間支援後端同步生成。設定正式後端位址後再建置，確保部署平台也允許至少 75 秒請求。這份 app 不使用靜態匯出。
+```sh
+bash scripts/test-all.sh   # everything below, in order; stops at the first failure
+```
 
-## 第一版功能與目前狀態
+| What                                                       | Command                                                             |
+| ---------------------------------------------------------- | ------------------------------------------------------------------- |
+| Format + TypeScript                                        | `pnpm lint`                                                         |
+| Backend unit tests                                         | `cd apps/backend && .venv/bin/python -m unittest discover -s tests` |
+| API status codes over HTTP                                 | `bash apps/backend/tests/test_api.sh`                               |
+| Web client, real upload, proxy                             | `pnpm test`                                                         |
+| Production build                                           | `pnpm build`                                                        |
+| Browser tests (journey, accessibility, links, performance) | `pnpm test:e2e`                                                     |
 
-真實 recipe 列表與詳細頁、裝置內收藏、JPEG / PNG / WebP 上傳預覽（最大 8MB）、同步生成、持久化結果連結、live / cached / mock 來源揭露、原始貼文連結與七種 API 錯誤均已對接。所有模式原樣顯示後端 `sourceNote`；prompt 不會打包到前端。
+Browser tests use Playwright with a fake image model, so they never call Google or cost money. Install dev tools with `apps/backend/.venv/bin/pip install -r apps/backend/requirements-dev.txt`. CI runs the same script plus `pnpm audit` and `pip-audit` on every push.
 
-目前三份 seed 的 `tryReady` 都是 `false`，AI provider 尚未實作。前端會停用試用與上傳，直到後端完成核實與 provider。Terms / Privacy 尚無正式文件，因此未提供假連結。收藏只儲存在目前瀏覽器，尚無帳號同步。
+To check a deployed site (read-only), run `bash scripts/smoke.sh https://your-site`. Add `SMOKE_GENERATE=1` to also run one real, billable generation.
 
-先前的靜態 Sites 預覽是歷史原型；本 repo 是正式前端原始碼，不含假生成流程。詳細範圍與下一步見 `PROJECT.md`、`ROADMAP.md`。
+## Project structure
+
+```
+apps/web         Next.js website (App Router, React, TypeScript)
+apps/backend     FastAPI API, recipe data, generation pipeline, tests
+apps/mobile      Reserved for a future Expo app
+packages/api     Typed API client shared by web and mobile
+packages/types   Shared API types
+packages/core    Upload validation
+packages/design  Design tokens
+docs/            Product, API contract, design notes and release reports
+```
+
+More detail: [product](docs/product/README.md) · [API contract](docs/architecture/api-contract.md) · [design](docs/design/README.md)
+
+## Deploying
+
+The website needs a running Next.js server (not a static export): it proxies `/api/*` and `/static/*` to the FastAPI server set in `BACKEND_URL` at build time. Allow requests of at least 75 seconds, since generation can take up to 60.
+
+Settings (all server-side; see `apps/backend/.env.example` and `apps/web/.env.example`):
+
+| Where   | Variable                                                      | Purpose                                                                   |
+| ------- | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| API     | `GEMINI_API_KEY`                                              | Turns on live generation. Set a spending cap in Google AI Studio too.     |
+| API     | `MOSAIC_DAILY_GLOBAL` (default 50)                            | Paid generations per day across all visitors                              |
+| API     | `MOSAIC_RATE_PER_MINUTE` / `MOSAIC_DAILY_PER_CLIENT` (3 / 10) | Per-visitor limits                                                        |
+| API     | `BLOB_READ_WRITE_TOKEN`                                       | Vercel Blob for results. On Vercel, live generation stays off without it. |
+| Both    | `MOSAIC_PROXY_SECRET`                                         | Same random value on both, so limits count real visitors                  |
+| Website | `BACKEND_URL`                                                 | The API's origin                                                          |
+
+Limits are conservative defaults, not final product decisions. Details: [API contract](docs/architecture/api-contract.md) · [release checklist](docs/release/v0.1-release-checklist.md) · [security and cost review](docs/release/v0.1-security-cost-review.md).
+
+## Roadmap
+
+- [x] Gallery, recipe, try and result pages connected to the API
+- [x] Honest live / cached / mock results
+- [x] Gemini image generation
+- [x] Cost limits, result storage, privacy and terms, accessibility checks, CI
+- [ ] Verify creators and Instagram links; add their preview images
+- [ ] Open the first recipes for Try and record the demo video
+- [ ] Deploy a public instance
+- [ ] Expo mobile app on the shared packages
+
+## Team
+
+Built by [@joojoohappy](https://github.com/joojoohappy) and [@ZoeWTY](https://github.com/ZoeWTY).
